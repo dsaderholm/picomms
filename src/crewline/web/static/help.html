@@ -1,33 +1,59 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f14">
+<meta name="color-scheme" content="dark light">
 <title>Crewline Help</title>
 <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/static/style.css">
+<script src="/static/js/theme.js"></script>
+<link rel="stylesheet" href="/static/css/theme.css">
+<link rel="stylesheet" href="/static/css/base.css">
+<link rel="stylesheet" href="/static/css/pages.css">
 </head>
-<body>
-<header class="topbar"><span class="brand">Crewline Help</span><span class="spacer"></span><a href="/">Dashboard</a></header>
-<main class="wrap" style="padding-top:16px;max-width:760px">
-<div class="panel"><h2>My headset won't work</h2>
-<ol>
-<li>Is the headset switched on and charged? Switch it off and on again.</li>
-<li>Stand closer to the intercom box (or the crew area) and wait 10 seconds. The headset should connect by itself.</li>
-<li>Still nothing? Tell the crew lead. They can press <b>Reconnect</b> in the admin page. Never pair the headset to your own phone or Chromebook — it will stop connecting here.</li>
-</ol></div>
-<div class="panel"><h2>Mute, groups and all-call</h2>
-<ul>
-<li><b>Mute</b> stops other people hearing you. You can still hear everything.</li>
-<li><b>Talk to</b> chooses which group hears you. <b>Listen</b> chooses which groups you hear.</li>
-<li><b>All-call</b> (only some people) lets everyone hear you, whatever group they are in.</li>
-<li><b>Call Sound</b> puts a flashing alert on the sound operator's screen. It works even if you are muted and whatever the captions heard.</li>
-<li>Show mode locks <i>settings</i> (pairing, names, groups). It never stops anyone hearing or talking.</li>
-</ul></div>
-<div class="panel"><h2>Whispering</h2>
-<p>There is no voice gate on the intercom. Whispers and the start of sentences are not cut off. If your microphone seems too quiet, move the boom closer to the corner of your mouth rather than speaking louder.</p></div>
-<div class="panel"><h2>Captions</h2>
-<p>Captions are automatic and can be wrong or late. They are an aid, not a record. They are only kept if an administrator has explicitly turned that on. If captions stop, the intercom audio is not affected.</p></div>
+<body class="page-help">
+<header class="help-bar page-pad">
+  <a class="btn quiet" href="/">&larr; Crew list</a>
+  <b class="help-title">Help</b>
+</header>
+<main class="help-main page-pad" id="main">
+  <h1>Quick answers</h1>
+  <section class="panel" aria-labelledby="h-nowork">
+    <h2 id="h-nowork">My headset won't connect</h2>
+    <ol>
+      <li>Switch it off and on again. Make sure it is charged.</li>
+      <li>Stand near the crew area and wait ten seconds. It should connect by itself.</li>
+      <li>Still nothing? Tell the crew lead, who can press <b>Reconnect</b> in Admin.</li>
+      <li>Never pair the headset with your own phone or Chromebook. It will stop connecting here until it is forgotten there.</li>
+    </ol>
+  </section>
+  <section class="panel" aria-labelledby="h-talk">
+    <h2 id="h-talk">Mute, groups and all-call</h2>
+    <ul>
+      <li><b>Mute</b> stops other people hearing you. You still hear everything.</li>
+      <li><b>Talk to</b> picks who hears you. <b>Listen</b> picks which groups you hear.</li>
+      <li><b>All-call</b> (only some people) lets everyone hear you for a moment. Muting or choosing a group ends it.</li>
+      <li><b>Call Sound</b> flashes an alert on the sound operator's screen. It works while muted and does not depend on captions.</li>
+      <li><b>Show mode</b> locks settings such as pairing, names and groups. It never stops anyone hearing or talking.</li>
+    </ul>
+  </section>
+  <section class="panel" aria-labelledby="h-mention">
+    <h2 id="h-mention">When my name is mentioned</h2>
+    <p>If someone says your name, the captions page flashes violet and, if you chose it, your earpiece plays two soft pings. It is a hint, not a promise: captions can miss a name. If it is urgent, someone should call you directly.</p>
+  </section>
+  <section class="panel" aria-labelledby="h-whisper">
+    <h2 id="h-whisper">Whispering</h2>
+    <p>There is no voice gate on the intercom, so whispers and the start of a sentence are not cut off. If you sound too quiet, move the boom closer to the corner of your mouth instead of speaking louder.</p>
+  </section>
+  <section class="panel" aria-labelledby="h-dark">
+    <h2 id="h-dark">Too bright in the booth?</h2>
+    <p>Use the theme button at the top of any page. <b>Night</b> uses dim red only, which keeps your eyes ready for the dark.</p>
+  </section>
+  <section class="panel" aria-labelledby="h-cap">
+    <h2 id="h-cap">Captions</h2>
+    <p>Captions are automatic and can be wrong or late. They are an aid, not a record. Nothing is stored unless an administrator has turned that on. If captions stop, the intercom audio is not affected.</p>
+  </section>
 </main>
 </body>
 </html>

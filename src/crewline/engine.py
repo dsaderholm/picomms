@@ -125,6 +125,7 @@ class Engine:
         self.log_events: deque[dict] = deque(maxlen=200)
         self.at = AtTranslator()
         self.mentions = MentionBook()
+        self.announcements: deque[dict] = deque(maxlen=5)
         self.net = net
         self.net_status: dict = {"available": False, "reason": "network control not configured"}
         self._passthrough_applied: tuple[str, bool] | None = None
@@ -586,6 +587,17 @@ class Engine:
         self._mention_cue(target, force=True)
         return True
 
+    def announce(self, text: str, by: str = "") -> dict:
+        """Show a short crew message ("Standby", "Go") on every dashboard and remote for a while."""
+        text = text.strip()[:80]
+        if not text:
+            raise ValueError("message is empty")
+        a = {"text": text, "by": by[:30], "t": time.time()}
+        self.announcements.appendleft(a)
+        self.bus.publish({"type": "announce", "announcement": a})
+        self.bus.publish({"type": "state"})
+        return a
+
     def ack_mentions(self, mid: int | None) -> int:
         n = self.mentions.ack(mid, time.time())
         if n:
@@ -629,6 +641,7 @@ class Engine:
             "uptime_s": int(time.time() - self.started),
             "pipewire_ok": self.pw_ok,
             "show_mode": cfg.show_mode,
+            "site_name": cfg.site_name,
             "groups": [{"id": g.id, "name": g.name, "cue_beeps": g.cue_beeps} for g in cfg.groups],
             "endpoints": eps,
             "links": sorted([list(l) for l in self.links_now]),
@@ -644,6 +657,7 @@ class Engine:
             "attention_target": cfg.attention_target,
             "network": self._network_summary(),
             "mentions": [m.to_dict() for m in self.mentions.active(time.time())],
+            "announcements": [a for a in self.announcements if time.time() - a["t"] < 25],
             "captions": {**self.captions.health(), "server_cfg": cfg.captions.server, "highlight_terms": cfg.captions.highlight_terms,
                          "retain_transcripts": cfg.captions.retain_transcripts,
                          "mention_cooldown_s": cfg.captions.mention_cooldown_s},

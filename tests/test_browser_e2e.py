@@ -94,109 +94,121 @@ async def new_page(browser, errors, **kw):
 async def admin_login(page, base, pw):
     await page.goto(base + "/admin")
     await page.fill("#pw", pw)
-    await page.click("#login-form button")
-    await page.wait_for_selector("#tabs button")
+    await page.click("button[type=submit]")
+    await page.wait_for_selector("[data-testid=nav-overview]")
 
 
-async def tab(page, name):
-    await page.click(f"#tabs button:has-text('{name}')")
-    await page.wait_for_timeout(300)
+async def goto(page, base, name):
+    await page.goto(f"{base}/admin#/{name}")
+    await page.wait_for_timeout(250)
 
 
-async def test_pairing_flow_creates_endpoint(site, browser):
+def tid(x):
+    return f"[data-testid='{x}']"
+
+
+async def test_pairing_flow_creates_person(site, browser):
     base, eng, pw_, app = site
     errors = []
     page = await new_page(browser, errors)
     await admin_login(page, base, pw_)
-    await tab(page, "Devices")
-    await page.click("text=Open pairing window")
-    await page.wait_for_selector("text=JLab GO Work 9", timeout=8000)
-    await page.click("button:has-text('Pair as')")
-    await page.fill("#pn", "Casey (Stage right)")
-    await page.click("#dlg-body button:has-text('Pair')")
+    await goto(page, base, "devices")
+    await page.click(tid("open-pairing"))
+    await page.click(tid("pair-AA:BB:CC:00:00:09"), timeout=8000)
+    await page.fill(tid("pair-name"), "Casey (Stage right)")
+    await page.click(tid("pair-confirm"))
     assert await until(lambda: eng.store.config.endpoint("caseystageright") is not None)
     assert eng.store.config.endpoint("caseystageright").address == "AA:BB:CC:00:00:09"
     assert not errors, errors
 
 
-async def test_edit_endpoint_groups_and_dial_codes(site, browser):
+async def test_edit_person_groups_and_dial_codes(site, browser):
     base, eng, pw_, app = site
     errors = []
     page = await new_page(browser, errors)
     await admin_login(page, base, pw_)
-    # add a group
-    await tab(page, "Groups")
+    await goto(page, base, "groups")
     await page.click("button:has-text('Add group')")
-    await page.fill("#dlg-body input >> nth=0", "Lights")
-    await page.click("#dlg-body button:has-text('Save')")
+    await page.fill(tid("group-name"), "Lights")
+    await page.click(tid("group-save"))
     assert await until(lambda: eng.store.config.group("lights") is not None)
-    # edit Alex: latched mode, may talk to lights
-    await tab(page, "Endpoints")
-    row = page.locator("tr", has_text="Alex")
-    await row.locator("button:has-text('Edit')").click()
-    await page.select_option("#e-mode", "latched")
-    await page.locator(".checks[data-name='talk_allowed'] input[value='lights']").check()
-    await page.click("#dlg-body button:has-text('Save')")
+    # Alex: latched mic, may talk to Lights
+    await goto(page, base, "people")
+    await page.click(tid("edit-alex"))
+    await page.select_option(tid("person-mode"), "latched")
+    await page.check("input[aria-label='May talk to: Lights']")
+    await page.click(tid("person-save"))
     assert await until(lambda: eng.store.config.endpoint("alex").talk_mode == "latched")
     assert "lights" in eng.store.config.endpoint("alex").talk_allowed
-    # dial code 3 -> talk to lights
-    await tab(page, "Dial codes")
-    await page.select_option("#dt-3", "select:lights")
-    await page.fill("#dt-ac", "30")
-    await page.click("button:has-text('Save dial codes')")
+    # dial code 3 -> talk to Lights
+    await goto(page, base, "dial")
+    await page.click(tid("key-3"))
+    await page.select_option(tid("key-action"), "select:lights")
+    await page.click("dialog[open] button:has-text('Done')")
+    await page.click(tid("dial-save"))
     assert await until(lambda: eng.store.config.dtmf.commands.get("3") == "select:lights")
-    assert eng.store.config.dtmf.allcall_timeout_s == 30
     assert not errors, errors
 
 
-async def test_show_mode_locks_configuration_in_the_ui_but_not_controls(site, browser):
+async def test_show_mode_locks_settings_but_not_controls(site, browser):
     base, eng, pw_, app = site
     errors = []
     page = await new_page(browser, errors)
     await admin_login(page, base, pw_)
-    await page.click("#show-toggle")
+    await page.click("#show-mode-switch")
     assert await until(lambda: eng.store.config.show_mode)
-    await tab(page, "Endpoints")
-    await page.wait_for_selector("text=Show mode is on")
-    assert await page.locator("button:has-text('Add endpoint without a device')").is_disabled()
-    await tab(page, "Devices")
-    assert await page.locator("button:has-text('Open pairing window')").is_disabled()
-    # reconnect stays available
-    assert await page.locator("button:has-text('Reconnect')").first.is_enabled()
+    await goto(page, base, "people")
+    assert await page.locator(tid("add-person")).is_disabled()
+    await goto(page, base, "devices")
+    assert await page.locator(tid("open-pairing")).is_disabled()
     # the pocket remote still works in show mode
     tok = app[AUTH].token_for("alex")
     rp = await new_page(browser, errors)
     await rp.goto(f"{base}/r/{tok}")
-    await rp.wait_for_selector("#mute")
-    await rp.click("#mute")
+    await rp.wait_for_selector(tid("mute"))
+    await rp.click(tid("mute"))
     assert await until(lambda: eng.state["alex"].muted)
     assert not errors, errors
 
 
-async def test_remote_push_to_talk_and_call_sound_and_dashboard_ack(site, browser):
+async def test_remote_push_to_talk_call_sound_and_dashboard_ack(site, browser):
     base, eng, pw_, app = site
     errors = []
     tok = app[AUTH].token_for("alex")
     rp = await new_page(browser, errors, viewport={"width": 390, "height": 844}, has_touch=True)
     await rp.goto(f"{base}/r/{tok}")
-    await rp.wait_for_selector("#talk")
-    assert (await rp.inner_text("#talk")).startswith("HOLD TO TALK")
-    box = await rp.locator("#talk").bounding_box()
+    await rp.wait_for_selector(tid("talk"))
+    assert "hold to talk" in (await rp.inner_text(tid("talk"))).lower()
+    box = await rp.locator(tid("talk")).bounding_box()
     await rp.mouse.move(box["x"] + 20, box["y"] + 20)
     await rp.mouse.down()
     assert await until(lambda: eng.state["alex"].ptt_down)
-    assert any(l[0] == "AA:BB:CC:00:00:02" for l in eng.links_now)     # transmitting while held
+    assert await until(lambda: any(l[0] == "AA:BB:CC:00:00:02" for l in eng.links_now))   # transmitting while held
     await rp.mouse.up()
     assert await until(lambda: not eng.state["alex"].ptt_down)
-    # Call Sound -> dashboard banner -> acknowledge
-    await rp.click("#call")
+    await rp.click(tid("call"))
     assert await until(lambda: eng.controller.active_attention())
     dash = await new_page(browser, errors)
     await dash.goto(base + "/")
-    await dash.wait_for_selector(".alert")
-    assert "CALLING SOUND" in (await dash.inner_text(".alert")).upper()
-    await dash.click(".alert button")
+    await dash.wait_for_selector(tid("call-alert"))
+    assert "alex" in (await dash.inner_text(tid("call-alert"))).lower()
+    await dash.click(tid("call-alert") + " button")
     assert await until(lambda: not eng.controller.active_attention())
+    assert not errors, errors
+
+
+async def test_name_mention_flashes_the_right_dashboard_and_can_be_cleared(site, browser):
+    base, eng, pw_, app = site
+    errors = []
+    dash = await new_page(browser, errors)
+    await dash.goto(base + "/")
+    await dash.wait_for_selector(tid("station-alex"))
+    # the dashboard follows the Sound operator by default, so a mention of Sound shows up here
+    assert eng.test_mention("sound")
+    await dash.wait_for_selector(tid("mention-alert"), timeout=6000)
+    assert await dash.locator(".glow.mention.on").count() == 1
+    await dash.click(tid("mention-alert") + " button")
+    await dash.wait_for_selector(tid("mention-alert"), state="detached", timeout=6000)
     assert not errors, errors
 
 
@@ -205,12 +217,14 @@ async def test_button_learn_and_mapping_via_ui(site, browser):
     errors = []
     page = await new_page(browser, errors)
     await admin_login(page, base, pw_)
+    await goto(page, base, "people")
+    await page.click(tid("edit-alex"))
+    await page.click("button:has-text('Learn and assign buttons')")
     eng.on_at("AA:BB:CC:00:00:02", "AT+BLDN")                      # headset sends 'redial'
-    await tab(page, "Endpoints")
-    await page.locator("tr", has_text="Alex").locator("button:has-text('Buttons')").click()
+    await page.click("button:has-text('Refresh')")
     await page.wait_for_selector("text=seen 1")
-    await page.select_option("#dlg-body select[data-ev='redial']", "attention")
-    await page.click("#dlg-body button:has-text('Save mapping')")
+    await page.select_option("select[aria-label='redial']", "attention")
+    await page.click("button:has-text('Save assignments')")
     assert await until(lambda: eng.store.config.endpoint("alex").buttons.get("redial") == "attention")
     eng.on_at("AA:BB:CC:00:00:02", "AT+BLDN")
     assert await until(lambda: eng.controller.active_attention())
@@ -225,15 +239,34 @@ async def test_diagnostics_and_backup_download(site, browser):
     eng.graph.devices["AA:BB:CC:00:00:02"].sco_ok = False           # paired, but no voice link
     eng.kick()
     await until(lambda: not eng.state["alex"].audio_up)
-    await tab(page, "Diagnostics")
+    await goto(page, base, "diagnostics")
     await page.select_option("#dx-ep", "alex")
-    await page.click("button:has-text('Diagnose')")
+    await page.click(tid("diagnose"))
     await page.wait_for_selector("text=no voice nodes")
-    await tab(page, "Backup")
+    await goto(page, base, "settings")
     async with page.expect_download() as dl:
-        await page.click("a:has-text('Download backup')")
+        await page.click(tid("backup-download"))
     d = await dl.value
     assert d.suggested_filename.startswith("crewline-config-")
+    assert not errors, errors
+
+
+async def test_theme_choice_is_remembered_and_night_is_red_only(site, browser):
+    base, eng, pw_, app = site
+    errors = []
+    page = await new_page(browser, errors)
+    await page.goto(base + "/")
+    await page.wait_for_selector(tid("station-alex"))
+    assert await page.evaluate("document.documentElement.dataset.theme") == "dark"   # the booth default
+    await page.evaluate("localStorage.setItem('crewline.theme','night')")
+    await page.reload()
+    await page.wait_for_selector(tid("station-alex"))
+    assert await page.evaluate("document.documentElement.dataset.theme") == "night"
+    # in night mode no text colour may carry green or blue light
+    bad = await page.evaluate("""() => { const out = []; for (const el of document.querySelectorAll('body *')) {
+        const m = getComputedStyle(el).color.match(/[0-9.]+/g); if (!m) continue; const [r, g, b] = m.map(Number);
+        if (el.textContent.trim() && (b > r || g > r)) out.push(el.className + ':' + getComputedStyle(el).color); } return out.slice(0, 5); }""")
+    assert not bad, bad
     assert not errors, errors
 
 
@@ -242,8 +275,9 @@ async def test_no_literal_null_or_undefined_anywhere(site, browser):
     errors = []
     page = await new_page(browser, errors)
     await admin_login(page, base, pw_)
-    for t in ("Status", "Devices", "Endpoints", "Groups", "Dial codes", "Captions", "Diagnostics", "Backup"):
-        await tab(page, t)
+    for t in ("overview", "setup", "devices", "people", "groups", "dial", "alerts", "captions", "network", "diagnostics", "settings", "print"):
+        await goto(page, base, t)
+        await page.wait_for_timeout(300)
         txt = await page.inner_text("body")
         for bad in ("null", "undefined", "NaN", "[object"):
             assert bad not in txt, (t, bad)

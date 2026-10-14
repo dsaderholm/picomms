@@ -1,0 +1,84 @@
+/* Crewline design tokens.
+   Concept: a low-glare booth console. Matte blue-black surfaces, label-maker type, LED state colours.
+   Semantic colours are separate from the accent: live (talking / ok), warn, alert (a call), mention.
+   Themes: dark (default, for a dark booth) · night (red only, preserves night vision) · light · auto (follows the OS). */
+
+@font-face { font-family: "Atkinson Hyperlegible Next"; font-style: normal; font-weight: 200 800; font-display: swap;
+  src: url("/static/fonts/atkinson-hyperlegible-next-latin-wght-normal.woff2") format("woff2"); }
+@font-face { font-family: "Barlow Condensed"; font-style: normal; font-weight: 500; font-display: swap;
+  src: url("/static/fonts/barlow-condensed-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Barlow Condensed"; font-style: normal; font-weight: 600; font-display: swap;
+  src: url("/static/fonts/barlow-condensed-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Barlow Condensed"; font-style: normal; font-weight: 700; font-display: swap;
+  src: url("/static/fonts/barlow-condensed-latin-700-normal.woff2") format("woff2"); }
+
+:root {
+  /* type */
+  --font-ui: "Atkinson Hyperlegible Next", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-label: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --fs-xs: .75rem; --fs-sm: .875rem; --fs-md: 1rem; --fs-lg: 1.125rem; --fs-xl: 1.375rem; --fs-2xl: 1.75rem; --fs-3xl: 2.25rem;
+  /* space, shape, motion */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-7: 48px;
+  --r-1: 4px; --r-2: 8px; --r-3: 14px;
+  --touch: 44px;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+
+  /* dark (default) */
+  color-scheme: dark;
+  --bg: #0b0f14; --s1: #121922; --s2: #19222d; --s3: #212c39;
+  --line: #263240; --line-strong: #3a4b60;
+  --text: #e7edf4; --text-2: #a8b4c2; --text-3: #8794a4;
+  --accent: #7aaaff; --accent-ink: #07111f; --accent-soft: rgb(122 170 255 / .14);
+  --live: #3ddc97; --warn: #f5b942; --alert: #ff6464; --mention: #c9a0ff;
+  --live-soft: rgb(61 220 151 / .14); --warn-soft: rgb(245 185 66 / .14);
+  --alert-soft: rgb(255 100 100 / .16); --mention-soft: rgb(201 160 255 / .16);
+  --g0: #3cc9b9; --g1: #ff9b54; --g2: #f27ab8; --g3: #62b4ff; --g4: #b4d65a; --g5: #a994ff;
+  --shadow: 0 1px 0 rgb(255 255 255 / .03) inset, 0 8px 30px rgb(0 0 0 / .35);
+  --scrim: rgb(3 6 10 / .66);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f2f5f9; --s1: #ffffff; --s2: #eaeff5; --s3: #dfe6ee;
+  --line: #d3dbe5; --line-strong: #aab6c5;
+  --text: #111a24; --text-2: #46556a; --text-3: #5d6d82;
+  --accent: #1a5fd0; --accent-ink: #ffffff; --accent-soft: rgb(26 95 208 / .1);
+  --live: #0a6b41; --warn: #8a5600; --alert: #c0241c; --mention: #7a3fc2;
+  --live-soft: rgb(15 122 75 / .1); --warn-soft: rgb(138 86 0 / .1);
+  --alert-soft: rgb(192 36 28 / .1); --mention-soft: rgb(122 63 194 / .1);
+  --g0: #0c7d73; --g1: #b0510a; --g2: #b0307a; --g3: #1a62b8; --g4: #5f7a10; --g5: #5c46c8;
+  --shadow: 0 1px 2px rgb(16 24 40 / .06), 0 6px 20px rgb(16 24 40 / .08);
+  --scrim: rgb(16 24 40 / .45);
+}
+
+/* Night: red-only palette. It keeps the dark adaptation of eyes in an unlit booth. State is carried by
+   brightness, shape and text, not hue. */
+:root[data-theme="night"] {
+  color-scheme: dark;
+  --bg: #080202; --s1: #120505; --s2: #1b0909; --s3: #260d0d;
+  --line: #3a1414; --line-strong: #5a2222;
+  --text: #ff9a86; --text-2: #d9806f; --text-3: #c07062;
+  --accent: #ff6f5a; --accent-ink: #190403; --accent-soft: rgb(255 111 90 / .14);
+  --live: #ffa04a; --warn: #ffc861; --alert: #ff4d3f; --mention: #ff8fb0;
+  --live-soft: rgb(255 160 74 / .14); --warn-soft: rgb(255 200 97 / .12);
+  --alert-soft: rgb(255 77 63 / .16); --mention-soft: rgb(255 143 176 / .14);
+  --g0: #ff8a5c; --g1: #ffb366; --g2: #ff7f8f; --g3: #ffa27a; --g4: #ffcb6b; --g5: #ff94b4;
+  --shadow: 0 8px 30px rgb(0 0 0 / .5);
+  --scrim: rgb(0 0 0 / .72);
+}
+
+@media (prefers-color-scheme: light) {
+  :root[data-theme="auto"] {
+    color-scheme: light;
+    --bg: #f2f5f9; --s1: #ffffff; --s2: #eaeff5; --s3: #dfe6ee;
+    --line: #d3dbe5; --line-strong: #aab6c5;
+    --text: #111a24; --text-2: #46556a; --text-3: #5d6d82;
+    --accent: #1a5fd0; --accent-ink: #ffffff; --accent-soft: rgb(26 95 208 / .1);
+    --live: #0a6b41; --warn: #8a5600; --alert: #c0241c; --mention: #7a3fc2;
+    --live-soft: rgb(15 122 75 / .1); --warn-soft: rgb(138 86 0 / .1);
+    --alert-soft: rgb(192 36 28 / .1); --mention-soft: rgb(122 63 194 / .1);
+    --g0: #0c7d73; --g1: #b0510a; --g2: #b0307a; --g3: #1a62b8; --g4: #5f7a10; --g5: #5c46c8;
+    --shadow: 0 1px 2px rgb(16 24 40 / .06), 0 6px 20px rgb(16 24 40 / .08);
+    --scrim: rgb(16 24 40 / .45);
+  }
+}

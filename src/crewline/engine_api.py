@@ -133,6 +133,11 @@ def make_app(eng) -> web.Application:
     async def export(req):
         return web.Response(text=eng.store.export_json(), content_type="application/json")
 
+    @r.post("/announce")
+    async def announce(req):
+        b = await body(req)
+        return _json({"ok": True, "announcement": eng.announce(b["text"], b.get("by", ""))})
+
     @r.post("/mention/ack")
     async def mention_ack(req):
         b = await body(req)

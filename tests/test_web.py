@@ -222,3 +222,45 @@ def test_rate_limiter():
     r = RateLimiter(3, 10)
     assert [r.allow("k", now=t) for t in (1, 2, 3, 4)] == [True, True, True, False]
     assert r.allow("k", now=20)
+
+
+async def test_announcement_reaches_the_public_state_and_needs_admin(stack):
+    c, eng, pw, app, _ = stack
+    r = await c.post("/api/admin/announce", json={"text": "Standby lights"}, headers=H)
+    assert r.status == 401
+    await login(c, pw)
+    r = await c.post("/api/admin/announce", json={"text": "Standby lights", "by": "Sound"}, headers=H)
+    assert r.status == 200
+    pub = await (await c.get("/api/public/state")).json()
+    assert [a["text"] for a in pub["announcements"]] == ["Standby lights"]
+    r = await c.post("/api/admin/announce", json={"text": "   "}, headers=H)
+    assert r.status == 400
+
+
+async def test_password_change_checks_current_and_replaces_it(stack):
+    c, eng, pw, app, _ = stack
+    await login(c, pw)
+    r = await c.post("/api/admin/password", json={"current": "wrong", "new": "a-new-password-1"}, headers=H)
+    assert r.status == 403
+    r = await c.post("/api/admin/password", json={"current": pw, "new": "short"}, headers=H)
+    assert r.status == 400
+    r = await c.post("/api/admin/password", json={"current": pw, "new": "a-new-password-1"}, headers=H)
+    assert r.status == 200
+    assert (await c.get("/api/admin/state")).status == 200          # the session is renewed
+    c.session.cookie_jar.clear()
+    assert (await c.post("/api/login", json={"password": pw}, headers=H)).status == 401
+    assert (await c.post("/api/login", json={"password": "a-new-password-1"}, headers=H)).status == 200
+
+
+async def test_network_routes_need_admin_and_are_locked_in_show_mode(stack):
+    c, eng, pw, app, _ = stack
+    assert (await c.get("/api/admin/network")).status == 401
+    await login(c, pw)
+    r = await c.get("/api/admin/network")
+    assert r.status == 200 and "ap_ssid" in (await r.json())["settings"]
+    r = await c.post("/api/admin/config/show_mode", json={"on": True}, headers=H)
+    assert r.status == 200
+    r = await c.post("/api/admin/network/settings", json={"ap_ssid": "Other"}, headers=H)
+    assert r.status == 423
+    r = await c.post("/api/admin/network/ap/stop", json={}, headers=H)
+    assert r.status == 423

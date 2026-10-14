@@ -1,54 +1,22 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Crewline Crew Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f14">
+<meta name="color-scheme" content="dark light">
+<title>Crewline</title>
 <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/static/style.css">
-<link rel="stylesheet" href="/static/dashboard.css">
+<link rel="manifest" href="/static/manifest.webmanifest">
+<script src="/static/js/theme.js"></script>
+<link rel="stylesheet" href="/static/css/theme.css">
+<link rel="stylesheet" href="/static/css/base.css">
+<link rel="stylesheet" href="/static/css/pages.css">
 </head>
-<body>
-<div id="sim" class="banner sim hidden">SIMULATION — nothing on this page comes from real hardware</div>
-<div id="off" class="banner off hidden">Engine offline — intercom audio keeps running; this page cannot update or control anything until it returns</div>
-<header class="topbar">
-  <span class="brand">Crewline</span>
-  <span id="c-show" class="chip">…</span>
-  <span id="c-cap" class="chip">captions …</span>
-  <span class="spacer"></span>
-  <label class="row small" style="margin:0"><input type="checkbox" id="opt-sound"> Alert sound</label>
-  <label class="row small" style="margin:0"><input type="checkbox" id="opt-awake"> Keep screen on</label>
-  <a href="/help" class="small">Help</a>
-  <a href="/admin" class="small">Admin</a>
-</header>
-
-<div id="alerts" aria-live="assertive"></div>
-
-<main class="wrap dash">
-  <section>
-    <h2>Crew</h2>
-    <div id="crew" class="grid"></div>
-    <p class="muted small" id="crew-note"></p>
-  </section>
-  <section class="panel caps">
-    <div class="row" style="justify-content:space-between">
-      <h2 style="margin:0">Live captions</h2>
-      <div class="row">
-        <select id="cap-filter" aria-label="Filter captions by group"><option value="">All groups</option></select>
-        <label class="row small" style="margin:0"><input type="checkbox" id="cap-mentions"> Highlights only</label>
-        <button class="small" id="cap-smaller" aria-label="Smaller text">A−</button>
-        <button class="small" id="cap-bigger" aria-label="Larger text">A+</button>
-      </div>
-    </div>
-    <p class="muted small" id="cap-status"></p>
-    <div id="caps" class="capslist" tabindex="0" aria-live="off"></div>
-    <button class="small hidden" id="cap-latest">Jump to latest ↓</button>
-    <p class="muted small">Captions are best-effort and may be wrong or late. They are not stored unless an administrator turns that on.</p>
-  </section>
-</main>
-
-<dialog id="pin"><form method="dialog"><label for="pin-in">Viewer PIN</label><input id="pin-in" inputmode="numeric" autocomplete="off"><div class="row" style="margin-top:10px"><button class="primary" value="ok">Open</button></div></form></dialog>
-<script src="/static/common.js"></script>
-<script src="/static/dashboard.js"></script>
+<body class="page-dashboard">
+<a class="skip-link" href="#main">Skip to the crew list</a>
+<div id="app"></div>
+<noscript><p style="padding:24px;color:#e7edf4">Crewline needs JavaScript. Your intercom audio is not affected.</p></noscript>
+<script type="module" src="/static/js/dashboard.js"></script>
 </body>
 </html>

@@ -25,6 +25,19 @@ from ..buttons import ACTION_LABELS, EVENT_LABELS
 from .auth import DEFAULT_ALLOWED, AuthStore, RateLimiter, ip_allowed
 
 log = logging.getLogger("crewline.web")
+import mimetypes
+
+mimetypes.add_type("text/javascript", ".mjs")
+mimetypes.add_type("text/javascript", ".js")
+mimetypes.add_type("application/manifest+json", ".webmanifest")
+mimetypes.add_type("font/woff2", ".woff2")
+try:                                   # aiohttp keeps its own copy of the table, built at import time
+    from aiohttp import web_fileresponse as _wf
+    for _ext, _ct in ((".woff2", "font/woff2"), (".webmanifest", "application/manifest+json"), (".mjs", "text/javascript")):
+        _wf.CONTENT_TYPES.add_type(_ct, _ext)
+except Exception:                      # pragma: no cover - older/newer aiohttp layouts
+    pass
+
 STATIC = Path(__file__).parent / "static"
 LINK = web.AppKey("link", object)
 AUTH = web.AppKey("auth", object)
@@ -112,11 +125,12 @@ class EngineLink:
 def public_state(st: dict) -> dict:
     """What a dashboard viewer may see: no addresses, adapters, batteries or tokens."""
     return {
-        "simulated": st["simulated"], "show_mode": st["show_mode"],
+        "simulated": st["simulated"], "show_mode": st["show_mode"], "site_name": st.get("site_name", ""),
+        "network": st.get("network", {}),
         "groups": st["groups"],
         "attention_target": st["attention_target"],
         "attention": [a for a in st["attention"] if a["active"]],
-        "mentions": st.get("mentions", []),
+        "mentions": st.get("mentions", []), "announcements": st.get("announcements", []),
         "captions": {k: st["captions"].get(k) for k in ("enabled", "connected")},
         "endpoints": [{
             "id": e["id"], "name": e["name"], "kind": e["kind"], "enabled": e["enabled"],
@@ -303,7 +317,7 @@ def make_app(args) -> web.Application:
     def viewer_event(ev: dict):
         t = ev.get("type")
         if t in ("state", "attention", "attention_ack", "config", "engine", "caption", "speaking",
-                 "mention", "mention_ack"):
+                 "mention", "mention_ack", "announce"):
             return ev
         return None            # button/log events are admin-only
 
@@ -361,7 +375,9 @@ def make_app(args) -> web.Application:
                 mine["dial_codes"].append({"digit": d, "does": text})
             mine["dial_prefix"] = st["dtmf"]["prefix"]
         return web.json_response({"me": mine, "groups": st["groups"], "endpoints": pub["endpoints"],
-                                  "attention": pub["attention"], "show_mode": st["show_mode"],
+                                  "attention": pub["attention"], "mentions": pub["mentions"], "announcements": pub["announcements"],
+                                  "site_name": st.get("site_name", ""), "attention_target": st["attention_target"],
+                                  "show_mode": st["show_mode"],
                                   "simulated": st["simulated"],
                                   "cheatsheet": build_cheatsheet(me_, binfo if isinstance(binfo, dict) else {}, st["groups"])})
 
@@ -377,6 +393,12 @@ def make_app(args) -> web.Application:
         if action not in REMOTE_ACTIONS and kind not in ("select", "listen"):
             return web.json_response({"ok": False, "error": "action not allowed from a remote link"}, status=400)
         status, data = await link.call("POST", "/control", {"endpoint": eid, "action": action, "source": "remote"})
+        return web.json_response(data, status=status)
+
+    @routes.post("/api/r/{token}/mention/ack")
+    async def rmack(req):
+        ep_for_token(req)
+        status, data = await link.call("POST", "/mention/ack", {"id": (await req.json()).get("id")})
         return web.json_response(data, status=status)
 
     @routes.get("/api/r/{token}/events")
@@ -449,10 +471,29 @@ def make_app(args) -> web.Application:
     async def anetap(req):
         return await proxy(req, "POST", f"/network/ap/{req.match_info['op']}")
 
+    @routes.post("/api/admin/announce")
+    async def aannounce(req):
+        return await proxy(req, "POST", "/announce")
+
+    @routes.post("/api/admin/password")
+    async def apassword(req):
+        need_admin(req)
+        b = await req.json()
+        if not auth.check_password(str(b.get("current", ""))):
+            await asyncio.sleep(0.5)
+            return web.json_response({"ok": False, "error": "The current password is wrong."}, status=403)
+        try:
+            auth.set_password(str(b.get("new", "")))
+        except ValueError as exc:
+            return web.json_response({"ok": False, "error": str(exc)}, status=400)
+        resp = web.json_response({"ok": True})
+        resp.set_cookie("crewline_session", auth.make_session(), httponly=True, samesite="Strict", max_age=12 * 3600)
+        return resp
+
     @routes.post("/api/admin/{area}/{op}")
     async def apost(req):
         area, op = req.match_info["area"], req.match_info["op"]
-        if area not in ("config", "bt", "test", "buttons", "control", "attention", "mention", "network"):
+        if area not in ("config", "bt", "test", "buttons", "control", "attention", "mention", "network", "announce"):
             raise web.HTTPNotFound()
         return await proxy(req, "POST", f"/{area}/{op}")
 
