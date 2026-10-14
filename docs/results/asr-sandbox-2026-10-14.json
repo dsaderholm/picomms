@@ -1,0 +1,149 @@
+{
+ "date": "2026-10-14",
+ "host": "Claude Code cloud sandbox VM, 4 vCPU Intel Xeon @ 2.80GHz, 16 GB (NOT the target hardware)",
+ "software": "sherpa-onnx 1.13.8 (CPU, int8 models, 2 threads)",
+ "clip": "tests/data/jfk_16k.wav, 11.0 s, one speaker (public-domain JFK excerpt)",
+ "caveats": [
+  "single clip, single speaker",
+  "'whisper-proxy' conditions are SYNTHETIC (noise-excited spectral envelope), not real whispered speech",
+  "noise is synthetic low-pass noise, not production sound",
+  "timing from a shared cloud VM; must be re-measured on the real caption computer (validation T11)"
+ ],
+ "results": [
+  {
+   "engine": "sherpa-streaming:/tmp/claude-0/-home-user-picomms/101b5864-427c-5107-865f-e25c75e3cc0e/scratchpad/models/sherpa-onnx-streaming-zipformer-en-20M-2023-02-17-x/sherpa-onnx-streaming-zipformer-en-20M-2023-02-17",
+   "condition": "clean",
+   "wer": 0.182,
+   "rtf": 0.045,
+   "tail_s": 0.029,
+   "load_s": 1.428,
+   "text": "UL AMERICANS ASK NOT WHAT YOUR COUNTRY CAN DO FOR YOU ASK WHAT YOU CAN DO FOR YOUR COUNTRY"
+  },
+  {
+   "engine": "sherpa-streaming:/tmp/claude-0/-home-user-picomms/101b5864-427c-5107-865f-e25c75e3cc0e/scratchpad/models/sherpa-onnx-streaming-zipformer-en-20M-2023-02-17-x/sherpa-onnx-streaming-zipformer-en-20M-2023-02-17",
+   "condition": "quiet(-35dB)",
+   "wer": 0.227,
+   "rtf": 0.049,
+   "tail_s": 0.032,
+   "load_s": 1.428,
+   "text": "UL AMERICA ASK NOT WHAT YOUR COUNTRY CAN DO FOR YOU ASK WHAT YOU CAN DO FOR YOUR COUNTRY"
+  },
+  {
+   "engine": "sherpa-streaming:/tmp/claude-0/-home-user-picomms/101b5864-427c-5107-865f-e25c75e3cc0e/scratchpad/models/sherpa-onnx-streaming-zipformer-en-20M-2023-02-17-x/sherpa-onnx-streaming-zipformer-en-20M-2023-02-17",
+   "condition": "whisper-proxy(-38dB)",
+   "wer": 0.591,
+   "rtf": 0.051,
+   "tail_s": 0.026,
+   "load_s": 1.428,
+   "text": "O FOR YOU AND WHAT YOU CAN DO FOR YOUR COUNTRY"
+  },
+  {
+   "engine": "sherpa-streaming:/tmp/claude-0/-home-user-picomms/101b5864-427c-5107-865f-e25c75e3cc0e/scratchpad/models/sherpa-onnx-streaming-zipformer-en-20M-2023-02-17-x/sherpa-onnx-streaming-zipformer-en-20M-2023-02-17",
+   "condition": "clean+noise(10dB)",
+   "wer": 0.227,
+   "rtf": 0.045,
+   "tail_s": 0.028,
+   "load_s": 1.428,
+   "text": "UL MY FELLOW AMERICA AND NOT WHAT YOUR COUNTRY CAN DO FOR YOU AND WHAT YOU CAN DO FOR YOUR COUNTRY"
+  },
+  {
+   "engine": "sherpa-streaming:/tmp/claude-0/-home-user-picomms/101b5864-427c-5107-865f-e25c75e3cc0e/scratchpad/models/sherpa-onnx-streaming-zipformer-en-20M-2023-02-17-x/sherpa-onnx-streaming-zipformer-en-20M-2023-02-17",
+   "condition": "whisper-proxy+noise(10dB)",
+   "wer": 0.955,
+   "rtf": 0.042,
+   "tail_s": 0.025,
+   "load_s": 1.428,
+   "text": "O AND LIKE YOU AND YOU'RE GOD"
+  },
+  {
+   "engine": "sherpa-whisper:/tmp/claude-0/-home-user-picomms/101b5864-427c-5107-865f-e25c75e3cc0e/scratchpad/models/sherpa-onnx-whisper-tiny.en-x/sherpa-onnx-whisper-tiny.en:tiny.en",
+   "condition": "clean",
+   "wer": 0.0,
+   "rtf": 0.133,
+   "tail_s": 1.458,
+   "load_s": 2.112,
+   "text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country."
+  },
+  {
+   "engine": "sherpa-whisper:/tmp/claude-0/-home-user-picomms/101b5864-427c-5107-865f-e25c75e3cc0e/scratchpad/models/sherpa-onnx-whisper-tiny.en-x/sherpa-onnx-whisper-tiny.en:tiny.en",
+   "condition": "quiet(-35dB)",
+   "wer": 0.0,
+   "rtf": 0.123,
+   "tail_s": 1.356,
+   "load_s": 2.112,
+   "text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country."
+  },
+  {
+   "engine": "sherpa-whisper:/tmp/claude-0/-home-user-picomms/101b5864-427c-5107-865f-e25c75e3cc0e/scratchpad/models/sherpa-onnx-whisper-tiny.en-x/sherpa-onnx-whisper-tiny.en:tiny.en",
+   "condition": "whisper-proxy(-38dB)",
+   "wer": 0.0,
+   "rtf": 0.093,
+   "tail_s": 1.025,
+   "load_s": 2.112,
+   "text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country."
+  },
+  {
+   "engine": "sherpa-whisper:/tmp/claude-0/-home-user-picomms/101b5864-427c-5107-865f-e25c75e3cc0e/scratchpad/models/sherpa-onnx-whisper-tiny.en-x/sherpa-onnx-whisper-tiny.en:tiny.en",
+   "condition": "clean+noise(10dB)",
+   "wer": 0.136,
+   "rtf": 0.092,
+   "tail_s": 1.014,
+   "load_s": 2.112,
+   "text": "And so my fellow American and not what your country can do for you and what you can do for your country."
+  },
+  {
+   "engine": "sherpa-whisper:/tmp/claude-0/-home-user-picomms/101b5864-427c-5107-865f-e25c75e3cc0e/scratchpad/models/sherpa-onnx-whisper-tiny.en-x/sherpa-onnx-whisper-tiny.en:tiny.en",
+   "condition": "whisper-proxy+noise(10dB)",
+   "wer": 0.136,
+   "rtf": 0.087,
+   "tail_s": 0.961,
+   "load_s": 2.112,
+   "text": "And so my fellow American has not what your country can do for you and what you can do for your country."
+  },
+  {
+   "engine": "sherpa-moonshine:/tmp/claude-0/-home-user-picomms/101b5864-427c-5107-865f-e25c75e3cc0e/scratchpad/models/sherpa-onnx-moonshine-tiny-en-int8-x/sherpa-onnx-moonshine-tiny-en-int8",
+   "condition": "clean",
+   "wer": 0.045,
+   "rtf": 0.029,
+   "tail_s": 0.319,
+   "load_s": 1.889,
+   "text": "And so my fellow Americans ask not what your country can do for you as what you can do for your country."
+  },
+  {
+   "engine": "sherpa-moonshine:/tmp/claude-0/-home-user-picomms/101b5864-427c-5107-865f-e25c75e3cc0e/scratchpad/models/sherpa-onnx-moonshine-tiny-en-int8-x/sherpa-onnx-moonshine-tiny-en-int8",
+   "condition": "quiet(-35dB)",
+   "wer": 0.045,
+   "rtf": 0.027,
+   "tail_s": 0.302,
+   "load_s": 1.889,
+   "text": "And so my fellow America, ask not what your country can do for you, ask what you can do for your country."
+  },
+  {
+   "engine": "sherpa-moonshine:/tmp/claude-0/-home-user-picomms/101b5864-427c-5107-865f-e25c75e3cc0e/scratchpad/models/sherpa-onnx-moonshine-tiny-en-int8-x/sherpa-onnx-moonshine-tiny-en-int8",
+   "condition": "whisper-proxy(-38dB)",
+   "wer": 0.136,
+   "rtf": 0.029,
+   "tail_s": 0.319,
+   "load_s": 1.889,
+   "text": "And so, my fellow-american, as not what your country can do for you, as what you can do for your country."
+  },
+  {
+   "engine": "sherpa-moonshine:/tmp/claude-0/-home-user-picomms/101b5864-427c-5107-865f-e25c75e3cc0e/scratchpad/models/sherpa-onnx-moonshine-tiny-en-int8-x/sherpa-onnx-moonshine-tiny-en-int8",
+   "condition": "clean+noise(10dB)",
+   "wer": 0.091,
+   "rtf": 0.025,
+   "tail_s": 0.273,
+   "load_s": 1.889,
+   "text": "And so my fellow American, ask not what your country can do for you, and what you can do for your country."
+  },
+  {
+   "engine": "sherpa-moonshine:/tmp/claude-0/-home-user-picomms/101b5864-427c-5107-865f-e25c75e3cc0e/scratchpad/models/sherpa-onnx-moonshine-tiny-en-int8-x/sherpa-onnx-moonshine-tiny-en-int8",
+   "condition": "whisper-proxy+noise(10dB)",
+   "wer": 0.182,
+   "rtf": 0.029,
+   "tail_s": 0.315,
+   "load_s": 1.889,
+   "text": "And though my fellow-american, as not what your country can do for you, and what you can do for your country."
+  }
+ ]
+}

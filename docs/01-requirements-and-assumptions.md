@@ -1,0 +1,65 @@
+# 1. Requirements, answers received, and assumptions
+
+You asked for the minimum essential questions first. You were asleep, then told
+me to decide anything obvious myself, so I proceeded on the assumptions below.
+**Each one is a decision I made, not a fact I verified.** Correct any that are
+wrong; most only change a quantity in the hardware list.
+
+## What you told me (taken as given)
+
+| Fact | Source |
+|---|---|
+| Headsets are **JLab GO Work, Bluetooth only** (already bought). Dongle-based headsets are welcome *if better*, but are not the plan. | your messages |
+| Money is not the main constraint; reliability is. "Way cheaper than something you would buy." | your messages |
+| You want **every** Bluetooth headset to work. | your message — see "Universal compatibility" below |
+| Priorities: **range → latency → audio quality**. | your messages |
+| Students/crew carry no Chromebooks; the Chromebooks and phones are used for dashboards. | your messages |
+| Captions, dashboard and remote must work on **phones, Chromebooks and a desktop**. | your message |
+| Open-source on GitHub for other schools/venues. Name "PicoMMS" is replaceable → renamed **Crewline**. | your messages |
+| You want per-headset button use maximised, with a phone web page as backup and a cheat-sheet that teaches the buttons. | your message |
+
+## The essential questions, with the answer I assumed
+
+| Question | Assumption used | What changes if wrong |
+|---|---|---|
+| How many simultaneous endpoints? | **Design for 8 headsets + the rotary phone (9).** Milestone 1 uses 2 headsets + the rotary. | Number of Bluetooth adapters (see 03-hardware.md). |
+| Exact JLab model/generation? | **Unknown — please read the model name on the box or headset.** The original GO Work and the "Gen 2" have different published specs (Gen 2: Bluetooth 5.3, HSP/HFP/A2DP/AVRCP, quick-mute with mic LED, multipoint, 55+ h battery). All hardware claims about "JLab buttons" are therefore *unverified for your units*. | Which button signals exist. Nothing structural. |
+| What hardware do you already own? | **Unknown. Possible Raspberry Pi 3B (unconfirmed).** | Whether the first test needs a purchase. Plan: borrow any x86 laptop running Debian 13 from a USB stick for milestone 1. |
+| Budget | **No hard cap; minimise risk, not cost.** | — |
+| Separate computer for captions? | **Assumed yes** (a desktop/laptop you already own, or the same mini PC if it benchmarks well). | Whether captions share the appliance CPU. |
+| Which Cell2Jack? How does it reach the host? | **It is a Bluetooth hands-free device from the host's point of view** (it presents itself like a headset to a phone). We pair it to the appliance instead of a phone. Whether the "tones" arrive as **audio** (in-band) or as **AT commands** (`AT+VTS`/`ATD`) is **unknown** — the design decodes both and test T4 settles it. | Which tone path is primary. |
+| Is the rotary phone really tone-dialing? | **Assumed it sends DTMF tones** (you said tested). | If it sends pulses, a different decoder is needed. |
+
+### Universal compatibility
+
+I cannot honestly promise that *every* Bluetooth headset works, and the brief
+asked me not to. What I can do, and did:
+
+* Rely only on the **Hands-Free Profile (HFP)**, which every Bluetooth headset
+  with a microphone implements. Narrowband (CVSD) voice is mandatory in HFP, so
+  a headset that cannot do wideband (mSBC) still works at lower quality.
+* Never depend on buttons for essential functions (phone remote + dial codes).
+* Build a **per-headset test** (`crewline-probe`, the readiness page's
+  diagnosis, and a compatibility matrix in the validation plan) so you learn
+  which models work *before* a show, and so other schools can contribute results.
+* Known failure classes: headsets that only do A2DP (music only, no microphone),
+  headsets whose multipoint grabs another device, headsets that drop voice links
+  on idle, and adapters with poor voice support. The diagnosis page names these.
+
+## Requirements → where each is handled
+
+| Requirement | Where |
+|---|---|
+| Local, no internet for core audio | 02-architecture.md (no cloud component anywhere in the audio path) |
+| Transcription failure never interrupts audio | captions are a separate process on a copy of the audio; tests in `tests/test_captions.py`, `tests/test_engine_sim.py` |
+| Management UI crash never stops audio | engine/web split; `pw-link` links linger (checked in PipeWire source) |
+| Tech + Stage groups, configurable, listen vs talk, all-call, permissions | `model.py`, `routing.py`, `control.py` (tests in `tests/test_routing_control.py`) |
+| Show-mode lock ≠ mute ≠ lockout | 07-intercom-behavior.md |
+| Open mic / latched / push-to-talk | `routing.is_transmitting`; remote page; buttons where proven |
+| Audible confirmation, only to the affected endpoint | `cues.py`, `engine.play` (test: cue goes only to the endpoint) |
+| Rotary phone dial codes, no tone broadcast | `dtmf.py` (+ gate), `commands.py`; T4 |
+| Captions + attention alert not dependent on recogniser | `control.Attention`; dashboard banner |
+| Browser admin: pair, name, groups, perms, diagnostics, readiness | `web/` |
+| Battery / hardware-mute only when reliably known | UI shows "unknown"; `tests` assert `battery is None` is never invented |
+| No retention by default | `CaptionSettings`; audio retention is *not implemented* and rejected by validation |
+| Preserve Google Meet fallback | nothing in this project touches the Meet setup; docs/06 recommends keeping Chromebooks charged as fallback |
