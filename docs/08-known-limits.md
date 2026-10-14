@@ -43,7 +43,7 @@ declaring show readiness; neither has happened (T12). Until then:
   priority 3; there is no music mode.
 * **No echo cancellation** between endpoints. People sitting next to each other's *open speakers* is not a supported setup;
   headsets only.
-* **Rotary phone:** hook state, ringing, and whether the voice link survives on-hook are unknown (T4). Ringing the phone is not built.
+* **Rotary phone (Cell2Jack 3):** tones are reported to arrive as audio and are decoded in-band; hook state, ringing, and whether the voice link survives on-hook are unknown (T4). Ringing the phone is not built.
 * **Phones as endpoints:** a phone cannot act as a Bluetooth *headset* to the appliance. Phones are supported as **dashboard/remote
   clients**; an audio-over-web endpoint (WebRTC) is a possible later feature (needs HTTPS for microphone access).
 * **Captions:** English models only as tested; accuracy on whispers and booth noise is unmeasured; captions lag speech by about

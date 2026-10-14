@@ -41,22 +41,28 @@ drops whispers — the thing you ruled out. Preferred ladder:
    **Not implemented yet and untested;** needs T6 with real show audio before use.
 3. **Never** a hard gate.
 
-## Dial codes (rotary phone) — PROPOSALS, please confirm
+## Dial codes (rotary phone)
 
-| Dial | Proposed action | Notes |
+You confirmed these defaults, and that the rotary phone's tones reach the appliance through the Cell2Jack 3 **as tones** (audio), which is what the decoder reads. Everything is editable under Admin → Dial codes.
+
+| Dial | Action | Notes |
 |---|---|---|
 | 1 | Talk to **Tech** (listening unchanged) | You hear one beep, only in your own ear |
 | 2 | Talk to **Stage** | Two beeps |
 | 0 | **All-call** on/off (latched, auto-ends after 20 s or when you select a group) | rising three tones = on, falling = off |
 | 7 | Mute / unmute your microphone | descending two tones = muted |
 | 8 | Status beep (current group / mute / all-call) | |
-| `#` and `*` | **unused** | The Cell2Jack may use `#*#` for pairing; avoid until its manual is checked |
+| `#` and `*` | unused | The Cell2Jack may use `#*#` for pairing; avoid until its manual is checked |
 
-**Questions for you** (defaults chosen are the "proposed" column):
-1. Should dialling a group change **talking only** (proposed) or **talking and listening**? (per-endpoint setting `select_scope`)
-2. All-call: **latched** (proposed, with auto-end) or **momentary** (only while a key is held — possible with a held tone, not with pulse dialling)?
-3. Require a prefix (e.g. `*1`) to prevent accidental triggers by speech? Default **no**; talk-off is measured in T4b and a prefix is one setting away.
-4. When you put the handset down: unknown until T4 (is hook state exposed? does the voice link close?).
+### Custom channels and more than 12 actions
+
+* **Two groups is not a limit.** Tech and Stage are only the defaults: add as many groups as you like under Admin → Groups (Lights, Video, Front of house, Band, Wings…).
+* A single dial key is limited to the 12 keys, so codes may also be **2–4 keys** (for example `2` `1` for a third group, `3` `0` `5` for something else). A code cannot be the start of a longer code (`2` and `21` cannot both exist), because without a "send" key the phone could not tell them apart; the editor refuses it and says why. The pause allowed between keys is a setting (default 2 s).
+* **Headset cues:** every group has a cue of 1–5 beeps at a low, medium or high pitch: 15 different cues, still language-free and only in the affected person's ear. Group colours repeat after six groups; names are always shown, so nothing depends on colour.
+* People choose among groups on their phone remote (any number of buttons), so dial codes are only needed for the rotary phone and for headset-free use.
+* Not built: per-group colours, named "scenes" or per-person private lines (listed in 09-ideas); say if you want them.
+
+Settings you can change (defaults in brackets): talking only or talking and listening when selecting a group (`select_scope`, talking only); all-call latched with auto-end (20 s) or momentary; an optional prefix key such as `*` to make accidental triggers by speech practically impossible (none). When the handset goes down: unknown until T4 (does the voice link close?).
 
 ### Preventing command tones from being broadcast
 

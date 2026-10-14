@@ -10,7 +10,7 @@ Design rules:
 * Mention = two quick soft pings (someone said your name).
 * Distinct *patterns* rather than distinct pitches, so they stay recognisable
   through the narrowband (8 kHz) HFP codec.
-* Group cue = N beeps (N = Group.cue_beeps). Mute on = descending pair, mute
+* Group cue = N beeps (N = Group.cue_beeps) at a low/mid/high pitch (3 x 5 = 15 distinct cues). Mute on = descending pair, mute
   off = ascending pair, all-call on = rising triplet, all-call off = falling
   triplet, denied = low double buzz, talk on/off = single high/low blip.
 """
@@ -39,13 +39,16 @@ def _gap(ms: int) -> list[float]:
     return [0.0] * (RATE * ms // 1000)
 
 
-def pattern(kind: str, beeps: int = 1) -> list[float]:
+PITCH_HZ = {"low": 587.0, "mid": 880.0, "high": 1319.0}   # all inside the 300-3400 Hz phone band
+
+
+def pattern(kind: str, beeps: int = 1, pitch: str = "mid") -> list[float]:
     s: list[float] = []
     if kind == "group":
         for i in range(max(1, beeps)):
             if i:
                 s += _gap(70)
-            s += _tone(880, 90)
+            s += _tone(PITCH_HZ[pitch], 90)
     elif kind == "mute_on":
         s = _tone(660, 90) + _gap(30) + _tone(440, 140)
     elif kind == "mute_off":
@@ -75,8 +78,8 @@ def pattern(kind: str, beeps: int = 1) -> list[float]:
     return s
 
 
-def render_wav(kind: str, beeps: int = 1) -> bytes:
-    samples = pattern(kind, beeps)
+def render_wav(kind: str, beeps: int = 1, pitch: str = "mid") -> bytes:
+    samples = pattern(kind, beeps, pitch)
     pcm = b"".join(struct.pack("<h", int(max(-1.0, min(1.0, x)) * 32767)) for x in samples)
     buf = io.BytesIO()
     with wave.open(buf, "wb") as w:

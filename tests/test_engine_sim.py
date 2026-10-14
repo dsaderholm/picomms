@@ -72,7 +72,7 @@ async def test_cue_goes_only_to_affected_endpoint(rig):
     await eng.control(ControlEvent("sound", "select:stage", "dtmf"))
     assert await wait_for(lambda: len(g.cues) >= 1)
     assert {a for a, _ in g.cues} == {SOUND}
-    assert g.cues[-1][1].endswith("group-2.wav")
+    assert g.cues[-1][1].endswith("group-mid-2.wav")
 
 
 async def test_disconnect_removes_links_and_reconnect_restores(rig):

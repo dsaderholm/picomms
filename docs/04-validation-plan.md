@@ -52,14 +52,14 @@ charged, `journalctl --user -u crewline-engine -f` open in a second terminal.
 
 ## T4 — Cell2Jack and tone commands
 
-* **Why:** dial codes and the "rotary phone" are core. How tones arrive is unknown.
+* **Why:** dial codes and the "rotary phone" are core. You report that the phone's tones pass through the Cell2Jack 3 as tones (audio), so the in-band decoder is the primary path; this test checks it on the real device, and finds out hook/ring behaviour.
 * **T4a (what does the Cell2Jack do?)** Pair the Cell2Jack to the appliance as endpoint "Sound" (kind: rotary phone). Run `btmon | tee docs/results/T4-btmon.txt` in one terminal. Pick up the handset, wait 5 s, dial `1`, `2`, `0`, `7`, `8`, `*`, put the handset down for 10 s, pick it up again. Also record audio: `crewline-probe record <ADDR> 60 docs/results/T4-sound.wav` during the same sequence.
   * From `T4-btmon.txt` note which AT commands appear (`ATD…`, `AT+VTS=…`, `ATA`, `AT+CHUP`, `+CIEV`, `RING`, `AT+BCC`) and when.
   * Does the voice link (SCO) stay open when the handset is down? (`crewline-probe nodes` while on-hook.) **This decides whether on-hook can be detected and whether the mic stays live.**
   * `crewline-probe dtmf-scan docs/results/T4-sound.wav -v` — do the tones appear **in the audio**? At what level, twist and length? Which frames were rejected and why?
 * **T4b (talk-off):** with the decoder enabled and **no** commands issued, let 30 minutes of real booth talk (including music/effects at show level) run through the rotary phone's microphone; count `digit` events in the engine log. **Pass: zero false commands.** A single JFK clip in the unit tests produced none, but that is not evidence for your room.
 * **T4c (tone leak):** while another headset listens, dial `1` ten times. Record the listener's earpiece (acoustic recording) and measure how much tone is audible before the gate closes. Target: below audibility (<~50 ms). If audible, enable the optional look-ahead delay for the rotary endpoint only (07-intercom-behavior.md).
-* **T4d (alternate path):** if tones arrive as `ATD`/`AT+VTS` and not audio, start `crewline-btsniff` and confirm digits reach the engine log ("digit X seen as AT command").
+* **T4d (alternate path, only if T4a shows no tones in the audio):** if tones arrive as `ATD`/`AT+VTS` and not audio, start `crewline-btsniff` and confirm digits reach the engine log ("digit X seen as AT command").
 * **T4e (reserved codes):** the Cell2Jack may use `#*#` (pairing) and other key sequences itself (its manual could not be fetched during development). Check the real manual; do **not** map `#`/`*` until confirmed.
 * **Decision outputs:** which path is primary; the true minimum tone length and level; whether `prefix = *` is needed.
 

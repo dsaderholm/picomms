@@ -288,3 +288,26 @@ async def test_no_literal_null_or_undefined_anywhere(site, browser):
         for bad in ("null", "undefined", "NaN", "[object"):
             assert bad not in txt, (url, bad)
     assert not errors, errors
+
+
+async def test_longer_dial_codes_and_group_pitch_via_ui(site, browser):
+    base, eng, pw_, app = site
+    errors = []
+    page = await new_page(browser, errors)
+    await admin_login(page, base, pw_)
+    await goto(page, base, "groups")
+    await page.click("button:has-text('Add group')")
+    await page.fill(tid("group-name"), "Lights")
+    await page.select_option("#g-pitch", "low")
+    await page.click(tid("group-save"))
+    assert await until(lambda: eng.store.config.group("lights") is not None)
+    assert eng.store.config.group("lights").cue_pitch == "low"
+    await goto(page, base, "dial")
+    await page.fill(tid("new-code"), "21")                      # "2" is already a one-key code: must be refused
+    await page.wait_for_selector("text=could not tell them apart")
+    await page.fill(tid("new-code"), "31")
+    await page.select_option(tid("new-act"), "select:lights")
+    await page.click(tid("add-code"))
+    await page.click(tid("dial-save"))
+    assert await until(lambda: eng.store.config.dtmf.commands.get("31") == "select:lights")
+    assert not errors, errors

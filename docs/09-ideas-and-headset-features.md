@@ -54,5 +54,5 @@ language; Call Sound alert; name-mention alerts (screen + earpiece); crew announ
 
 The project is named **Crewline** ("party line" is the old intercom term for a shared channel). Rename in
 one place if you prefer another: package `crewline`, services `crewline-*`, env vars `CREWLINE_*`.
-Choose a **license** before publishing (none is included: without one, nobody else may legally reuse the code).
-Permissive choices are MIT or Apache-2.0 (Apache adds an explicit patent grant); GPL-3.0 keeps derivatives open.
+License: **MIT** (see `LICENSE`), chosen so schools and other venues can use and adapt it freely. Bundled fonts, icons and
+libraries keep their own permissive licenses (`vendor/LICENSES.md`). Apache-2.0 (explicit patent grant) or GPL-3.0 (keeps derivatives open) are the alternatives if you change your mind.

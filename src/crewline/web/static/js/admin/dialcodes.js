@@ -21,11 +21,21 @@ export function DialCodes() {
   const [minTone, setMinTone] = useState(d.min_tone_ms);
   const [hold, setHold] = useState(d.gate_hold_ms);
   const [editKey, setEditKey] = useState(null);
+  const [dt, setDt] = useState(d.digit_timeout_s ?? 2);
+  const [newCode, setNewCode] = useState('');
+  const [newAct, setNewAct] = useState('');
   const acts = [['', 'Nothing'], ['mute:toggle', 'Mute / unmute'], ['allcall:toggle', 'All-call on/off'], ['attention', 'Call Sound'], ['status', 'Status beep'], ['talk:toggle', 'Latched talk on/off'],
     ...S.groups.map((g) => ['select:' + g.id, 'Talk to ' + g.name]), ...S.groups.map((g) => ['listen:' + g.id, 'Hear ' + g.name + ' on/off'])];
   const sound = S.endpoints.find((e) => e.tone_control);
-  const dirty = JSON.stringify(commands) !== JSON.stringify(d.commands) || prefix !== (d.prefix || '') || +ac !== d.allcall_timeout_s || +minTone !== d.min_tone_ms || +hold !== d.gate_hold_ms;
-  const save = () => call('/config/dtmf', { commands, prefix: prefix.trim(), allcall_timeout_s: +ac, min_tone_ms: +minTone, gate_hold_ms: +hold }, 'Dial codes saved');
+  const dirty = JSON.stringify(commands) !== JSON.stringify(d.commands) || prefix !== (d.prefix || '') || +ac !== d.allcall_timeout_s || +minTone !== d.min_tone_ms || +hold !== d.gate_hold_ms || +dt !== (d.digit_timeout_s ?? 2);
+  const save = () => call('/config/dtmf', { commands, prefix: prefix.trim(), allcall_timeout_s: +ac, min_tone_ms: +minTone, gate_hold_ms: +hold, digit_timeout_s: +dt }, 'Dial codes saved');
+  const longCodes = Object.keys(commands).filter((k) => k.length > 1).sort();
+  const code = newCode.toUpperCase();
+  const codeProblem = !code ? '' : !/^[0-9*#A-D]{2,4}$/.test(code) ? 'Use 2 to 4 keys: 0-9, * # or A-D.'
+    : commands[code] ? 'That code already exists.'
+    : Object.keys(commands).some((k) => k !== code && (k.startsWith(code) || code.startsWith(k))) ? 'It starts with, or is the start of, another code. The phone could not tell them apart.' : '';
+  const addCode = () => { if (!code || codeProblem || !newAct) return; setCommands({ ...commands, [code]: newAct }); setNewCode(''); setNewAct(''); };
+  const dropCode = (k) => { const c = { ...commands }; delete c[k]; setCommands(c); };
   const tryIt = async (digit) => {
     const a = commands[digit]; if (!a || !sound) return;
     const r = await call('/control', { endpoint: sound.id, action: a, source: 'admin' });
@@ -34,15 +44,23 @@ export function DialCodes() {
   return html`<div class="stack-lg">
     <${PageHead} title="Dial codes" actions=${html`<${Button} variant="primary" onClick=${save} disabled=${locked || !dirty} data-testid="dial-save">Save dial codes<//>`}>What each key on the rotary or desk phone does. Tap a key to change it.<//>
     <${LockNote} />
-    <${Callout} kind="warn" icon="triangle-alert">These are proposals until they are tried on the real phone. The Cell2Jack may use <span class="kbd">#</span> and <span class="kbd">*</span> for its own functions, so avoid them until its manual is checked.<//>
+    <${Callout} kind="info" icon="info">The phone's tones pass through the Cell2Jack as sound and are decoded here. Try each code on the real phone before a show. The Cell2Jack may use <span class="kbd">#</span> and <span class="kbd">*</span> for its own functions, so avoid them until its manual is checked.<//>
     <div class="dial-layout">
       <${Panel} id="keypad" eyebrow="Keypad" title="Keys">
         <div class="keypad" role="group" aria-label="Keypad">${KEYS.map(([k, letters]) => html`<button key=${k} type="button" class=${'key' + (commands[k] ? ' set' : '')} data-testid=${'key-' + k} disabled=${locked} onClick=${() => setEditKey(k)}>
           <span class="digit">${k}</span>${' '}<span class="what">${actionLabel(commands[k], S.groups)}</span></button>`)}</div><//>
       <div class="stack">
+        <${Panel} id="longcodes" eyebrow="More than 12 actions" title="Longer codes">
+          <div class="stack"><p class="muted small">The 12 keys are not a limit. A code can be 2 to 4 keys, for example <span class="kbd">2</span> <span class="kbd">1</span> to talk to a third group. A code cannot start with another code (so if <span class="kbd">2</span> is used, <span class="kbd">21</span> is not allowed).</p>
+            ${longCodes.length ? html`<ul class="rowlist">${longCodes.map((k) => html`<li key=${k} class="person-row"><b class="mono">${k}</b><div class="grow">${actionLabel(commands[k], S.groups)}</div>
+              <${Button} size="sm" variant="danger" disabled=${locked} onClick=${() => dropCode(k)} aria-label=${'Remove code ' + k}>Remove<//></li>`)}</ul>` : html`<p class="faint small">No longer codes yet.</p>`}
+            <div class="cluster"><${Field} id="new-code" label="New code" error=${codeProblem}><input id="new-code" class="input mono" style="max-width:8em" maxlength="4" value=${newCode} onInput=${(e) => setNewCode(e.target.value)} disabled=${locked} data-testid="new-code" /><//>
+              <${Field} id="new-act" label="Does this"><select id="new-act" class="select" value=${newAct} onChange=${(e) => setNewAct(e.target.value)} disabled=${locked} data-testid="new-act">${acts.map(([v, t]) => html`<option value=${v}>${v ? t : 'Choose an action'}</option>`)}</select><//>
+              <${Button} onClick=${addCode} disabled=${locked || !code || !!codeProblem || !newAct} data-testid="add-code" icon="plus">Add<//></div></div><//>
         <${Panel} id="rules" title="Rules">
           <div class="stack"><${Field} id="dt-prefix" label="Required first key (optional)" hint="With a first key such as * every command is two keys, for example * then 1. It makes accidental triggers by speech practically impossible."><input id="dt-prefix" class="input" maxlength="1" value=${prefix} onInput=${(e) => setPrefix(e.target.value)} disabled=${locked} style="max-width:6em" /><//>
             <${Field} id="dt-ac" label="All-call ends by itself after (seconds, 0 = never)"><input id="dt-ac" class="input" type="number" min="0" value=${ac} onInput=${(e) => setAc(e.target.value)} disabled=${locked} style="max-width:10em" /><//>
+            <${Field} id="dt-dig" label="Longest pause between the keys of a longer code (seconds)"><input id="dt-dig" class="input" type="number" min="0.3" max="10" step="0.1" value=${dt} onInput=${(e) => setDt(e.target.value)} disabled=${locked} style="max-width:10em" /><//>
             <div class="form-grid"><${Field} id="dt-min" label="Shortest tone that counts (ms)"><input id="dt-min" class="input" type="number" min="20" max="200" value=${minTone} onInput=${(e) => setMinTone(e.target.value)} disabled=${locked} /><//>
               <${Field} id="dt-hold" label="Keep the mic closed after a tone (ms)"><input id="dt-hold" class="input" type="number" min="0" max="1000" value=${hold} onInput=${(e) => setHold(e.target.value)} disabled=${locked} /><//></div></div><//>
         <${Panel} id="tips" title="Good to know">

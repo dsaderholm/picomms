@@ -31,6 +31,8 @@ class DtmfCommandHandler:
         self._cfg = cfg_get
         self._clock = clock
         self._armed_until = 0.0
+        self._buf = ""
+        self._buf_t = 0.0
 
     def handle(self, ev: DtmfEvent) -> DtmfResult:
         if ev.kind == "gate_on":
@@ -43,16 +45,26 @@ class DtmfCommandHandler:
         d = self._cfg().dtmf
         digit = ev.digit
         now = self._clock()
-        if d.prefix:
+        if self._buf and now - self._buf_t > d.digit_timeout_s:
+            self._buf = ""
+        if d.prefix and not self._buf:
             if digit == d.prefix and now >= self._armed_until:
                 self._armed_until = now + d.prefix_timeout_s
                 return DtmfResult()
             if now >= self._armed_until:
                 return DtmfResult()      # unarmed digit: ignore (speech talk-off guard)
-            self._armed_until = 0.0
             if digit == d.prefix:
+                self._armed_until = 0.0
                 return DtmfResult()
-        action = d.commands.get(digit)
-        if not action:
+        code = self._buf + digit
+        action = d.commands.get(code)
+        if action:                       # no code is the start of another, so a match is final
+            self._buf, self._armed_until = "", 0.0
+            return DtmfResult(controls=[ControlEvent(self.endpoint_id, action, "dtmf")])
+        if any(c.startswith(code) for c in d.commands):
+            self._buf, self._buf_t = code, now          # wait for the rest of the code
+            if d.prefix:
+                self._armed_until = now + d.digit_timeout_s
             return DtmfResult()
-        return DtmfResult(controls=[ControlEvent(self.endpoint_id, action, "dtmf")])
+        self._buf, self._armed_until = "", 0.0
+        return DtmfResult()

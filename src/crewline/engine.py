@@ -255,13 +255,14 @@ class Engine:
         for kind in ("mute_on", "mute_off", "allcall_on", "allcall_off", "talk_on", "talk_off",
                      "denied", "status", "attention_ack", "ring", "mention"):
             (self._cue_dir / f"{kind}.wav").write_bytes(cues.render_wav(kind))
-        for n in range(1, 6):
-            (self._cue_dir / f"group-{n}.wav").write_bytes(cues.render_wav("group", n))
+        for pitch in cues.PITCH_HZ:
+            for n in range(1, 6):
+                (self._cue_dir / f"group-{pitch}-{n}.wav").write_bytes(cues.render_wav("group", n, pitch))
 
     def _cue_path(self, cue: Cue) -> str:
         if cue.kind == "group":
             g = self.store.config.group(cue.group or "")
-            return str(self._cue_dir / f"group-{g.cue_beeps if g else 1}.wav")
+            return str(self._cue_dir / f"group-{g.cue_pitch if g else 'mid'}-{g.cue_beeps if g else 1}.wav")
         return str(self._cue_dir / f"{cue.kind}.wav")
 
     async def play(self, cue_list: list[Cue]) -> None:
@@ -642,7 +643,7 @@ class Engine:
             "pipewire_ok": self.pw_ok,
             "show_mode": cfg.show_mode,
             "site_name": cfg.site_name,
-            "groups": [{"id": g.id, "name": g.name, "cue_beeps": g.cue_beeps} for g in cfg.groups],
+            "groups": [{"id": g.id, "name": g.name, "cue_beeps": g.cue_beeps, "cue_pitch": g.cue_pitch} for g in cfg.groups],
             "endpoints": eps,
             "links": sorted([list(l) for l in self.links_now]),
             "adapters": [a.__dict__ for a in self.adapters],

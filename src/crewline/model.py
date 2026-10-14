@@ -56,12 +56,19 @@ def normalize_mac(mac: str) -> str:
     return m
 
 
+CUE_PITCHES = ("low", "mid", "high")
+DTMF_KEYS = "0123456789*#ABCD"
+MAX_CODE_LEN = 4
+
+
 @dataclass
 class Group:
     id: str
     name: str
     # Number of short beeps used as the audible group cue (language-free).
     cue_beeps: int = 1
+    # Pitch of those beeps: beeps x pitch gives 15 distinguishable group cues, not just 5.
+    cue_pitch: str = "mid"
 
     def validate(self) -> None:
         if not ID_RE.match(self.id):
@@ -70,6 +77,8 @@ class Group:
             raise ConfigError("group name is empty")
         if not 1 <= self.cue_beeps <= 5:
             raise ConfigError("cue_beeps must be 1..5")
+        if self.cue_pitch not in CUE_PITCHES:
+            raise ConfigError(f"cue_pitch must be one of {CUE_PITCHES}")
 
 
 @dataclass
@@ -159,12 +168,15 @@ class DtmfSettings:
     prefix: str = ""
     # Seconds a prefix stays armed.
     prefix_timeout_s: float = 3.0
+    # Longest pause (s) between the keys of a multi-key code such as "21" or "305".
+    digit_timeout_s: float = 2.0
     # Minimum tone duration (ms) before a digit counts.
     min_tone_ms: int = 40
     # Hold the endpoint's transmission closed while a tone is present (and for
     # this many ms afterwards) so command tones are not broadcast.
     gate_hold_ms: int = 150
-    # digit -> action string. Proposals only; to be confirmed by the user.
+    # code -> action string. A code is 1-4 keys (0-9 * # A-D); no code may be the beginning of a longer one.
+    # So one phone can reach far more than 12 actions, e.g. "21" -> talk to a third group.
     commands: dict[str, str] = field(
         default_factory=lambda: {
             "1": "select:tech",
@@ -256,10 +268,18 @@ class Config:
                     raise ConfigError(f"{e.id}: unknown button event {ev!r}")
                 if action != "ptt":
                     validate_action(action, set(gids))
-        for digit, action in self.dtmf.commands.items():
-            if digit not in "0123456789*#ABCD" or len(digit) != 1:
-                raise ConfigError(f"invalid DTMF digit {digit!r}")
+        if not 0.3 <= self.dtmf.digit_timeout_s <= 10:
+            raise ConfigError("digit_timeout_s must be between 0.3 and 10 seconds")
+        codes = list(self.dtmf.commands)
+        for code, action in self.dtmf.commands.items():
+            if not 1 <= len(code) <= MAX_CODE_LEN or any(ch not in DTMF_KEYS for ch in code):
+                raise ConfigError(f"invalid dial code {code!r}: use 1-{MAX_CODE_LEN} keys from {DTMF_KEYS}")
             validate_action(action, set(gids))
+        for a in codes:
+            for b in codes:
+                if a != b and b.startswith(a):
+                    raise ConfigError(f"dial code {a!r} is the start of {b!r}: the phone could not tell them apart. "
+                                      "Remove one, or make them the same length.")
 
     # --- (de)serialisation -------------------------------------------------
     def to_dict(self) -> dict[str, Any]:

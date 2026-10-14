@@ -9,7 +9,8 @@ wrong; most only change a quantity in the hardware list.
 
 | Fact | Source |
 |---|---|
-| Headsets are **JLab GO Work, Bluetooth only** (already bought). Dongle-based headsets are welcome *if better*, but are not the plan. | your messages |
+| Headsets are the **Bluetooth JLab GO Work** (already bought; the generation is not needed). Which buttons send anything to a host is still found by test (T5), because that depends on the unit's firmware. Dongle-based headsets are welcome *if better*, but are not the plan. | your messages |
+| The rotary phone does **tone dialling** and the **Cell2Jack 3** passes the tones through to the connected device **as tones** (audio). You have used DTMF decoders like this before. The proposed **dial codes are fine**. | your messages |
 | Money is not the main constraint; reliability is. "Way cheaper than something you would buy." | your messages |
 | You want **every** Bluetooth headset to work. | your message — see "Universal compatibility" below |
 | Priorities: **range → latency → audio quality**. | your messages |
@@ -27,12 +28,12 @@ wrong; most only change a quantity in the hardware list.
 | Question | Assumption used | What changes if wrong |
 |---|---|---|
 | How many simultaneous endpoints? | **Design for 8 headsets + the rotary phone (9).** Milestone 1 uses 2 headsets + the rotary. | Number of Bluetooth adapters (see 03-hardware.md). |
-| Exact JLab model/generation? | **Unknown — please read the model name on the box or headset.** The original GO Work and the "Gen 2" have different published specs (Gen 2: Bluetooth 5.3, HSP/HFP/A2DP/AVRCP, quick-mute with mic LED, multipoint, 55+ h battery). All hardware claims about "JLab buttons" are therefore *unverified for your units*. | Which button signals exist. Nothing structural. |
+| Exact JLab model/generation? | **Given: JLab GO Work (Bluetooth).** Button behaviour is measured in T5, not assumed. | Which button signals exist. Nothing structural. |
 | What hardware do you already own? | **Raspberry Pi 3Bs and mini PCs (your words; models unknown).** Prototype on a mini PC; use a Pi 3B only as a spare or an extra data point (its onboard Bluetooth cannot carry voice and its Wi-Fi is 2.4 GHz only). | Whether the first test needs a purchase: probably only USB Bluetooth adapters (and a 5 GHz Wi-Fi adapter for the hotspot). |
 | Budget | **No hard cap; minimise risk, not cost.** | — |
 | Separate computer for captions? | **Assumed yes** (a desktop/laptop you already own, or the same mini PC if it benchmarks well). | Whether captions share the appliance CPU. |
-| Which Cell2Jack? How does it reach the host? | **It is a Bluetooth hands-free device from the host's point of view** (it presents itself like a headset to a phone). We pair it to the appliance instead of a phone. Whether the "tones" arrive as **audio** (in-band) or as **AT commands** (`AT+VTS`/`ATD`) is **unknown** — the design decodes both and test T4 settles it. | Which tone path is primary. |
-| Is the rotary phone really tone-dialing? | **Assumed it sends DTMF tones** (you said tested). | If it sends pulses, a different decoder is needed. |
+| Which Cell2Jack? How does it reach the host? | **Cell2Jack 3 (given).** It is a Bluetooth hands-free device from the host's point of view; we pair it to the appliance like a headset. Its tones arrive as **audio** (given), which is what the decoder is built for; the AT-command sniffer (`crewline-btsniff`) is an optional extra, not the plan. Hook state/ringing are still unknown (T4). | Only hook/ring behaviour. |
+| Is the rotary phone really tone-dialling? | **Yes (given).** Pulse decoding is not built and not needed. | — |
 
 ### Universal compatibility
 
@@ -68,13 +69,12 @@ asked me not to. What I can do, and did:
 | No retention by default | `CaptionSettings`; audio retention is *not implemented* and rejected by validation |
 | Preserve Google Meet fallback | nothing in this project touches the Meet setup; docs/06 recommends keeping Chromebooks charged as fallback |
 
-## Open questions that need your answer (consolidated)
+## Open questions (what is still open)
 
-1. **Which JLab GO Work do you have** (original or "Gen 2"; model name/number on the box)?
-2. **Which Cell2Jack model**, and is the rotary phone sending **tones** or **pulses**? (If you still have the Cell2Jack manual, check for reserved key sequences such as `#*#`.)
-3. **Dial codes** (07-intercom-behavior.md): talk-only vs talk+listen; all-call latched vs momentary; prefix key or not; what should happen when the handset goes down?
-4. **How many headsets at the real show** (I assumed 8 + the rotary phone)?
-5. Which computer will run **captions** (and is a quiet-speech accuracy target needed, e.g. "90% of whispered phrases")?
-6. **License** for the GitHub project (MIT / Apache-2.0 / GPL-3.0 …) — I did not choose one.
-7. **GitHub:** the repository was empty, so I could only push my working branch (`claude/happy-dirac-yrwgay`) and could not open a pull request (a PR needs a base branch such as `main`). Choose/create the default branch and open the PR, or tell me to.
-8. Project **name** — I renamed PicoMMS to **Crewline**; say so if you prefer another (it is a one-place rename) — and the GitHub repository is still called `picomms`.
+1. **Dial codes:** confirmed by you; the defaults in 07-intercom-behavior.md stand. Longer (2-4 key) codes and any number of groups are supported if you want custom channels (see 07).
+2. **Hardware tests:** nothing has run on real headsets, adapters or the Cell2Jack yet (04-validation-plan.md). The first thing to learn is how many simultaneous headsets one adapter carries.
+3. **How many headsets at the real show?** I still assume 8 plus the rotary phone; the adapter count follows from T2/T3.
+4. **Which computer will run captions**, and is there a quiet-speech accuracy target?
+5. **GitHub:** see README ("Publishing"): the repository had no `main`; it is created from the first commit and the work arrives as a pull request.
+6. **License:** MIT (chosen; see LICENSE). Change it if you prefer another.
+7. **Name:** Crewline (renamed from PicoMMS/PiComms); the GitHub repository is still called `picomms`.

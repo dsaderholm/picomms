@@ -19,7 +19,7 @@ the web page fails.
 | [docs/03-hardware.md](docs/03-hardware.md) | **Recommended hardware, comparison (Pi 3B / newer Pi / x86), risks, staged purchase** |
 | [docs/02-architecture.md](docs/02-architecture.md) | Why PipeWire does the audio and Crewline only the control plane; failure isolation |
 | [docs/04-validation-plan.md](docs/04-validation-plan.md) | The hardware tests (T0–T13), pass criteria, results log — **all NOT RUN** |
-| [docs/07-intercom-behavior.md](docs/07-intercom-behavior.md) | Groups, lock vs mute vs lockout, dial codes (proposals), cues, gates |
+| [docs/07-intercom-behavior.md](docs/07-intercom-behavior.md) | Groups, lock vs mute vs lockout, dial codes and custom channels, cues, gates |
 | [docs/06-operations.md](docs/06-operations.md) | Install, recovery, backup/restore, **pre-show checklist** |
 | [docs/09-ideas-and-headset-features.md](docs/09-ideas-and-headset-features.md) | Headset/earbud features usable; features you may be forgetting |
 | [docs/05-research.md](docs/05-research.md), [docs/10-caption-benchmarks.md](docs/10-caption-benchmarks.md) | Sources (marked verified / second-hand / unknown) and the sandbox ASR numbers |
@@ -45,7 +45,7 @@ browsers ◄── crewline-web ◄── unix socket ◄── crewline-engine 
 ```
 python3 -m venv .venv && . .venv/bin/activate
 pip install -e '.[test]' pytest-asyncio pytest-timeout segno
-pytest                                  # 168 tests (9 drive a headless browser)
+pytest                                  # 173 tests (10 drive a headless browser)
 # full simulated system with fake headsets + the web UI:
 crewline-engine --sim --state-dir /tmp/cl --socket /tmp/cl/engine.sock &
 crewline-web --listen 127.0.0.1:8080 --socket /tmp/cl/engine.sock --state-dir /tmp/cl --config /dev/null &
@@ -60,10 +60,10 @@ Simulation mode is labelled with a banner on every page and is never evidence ab
 src/crewline/      engine, routing, control, dtmf, cues, bluez, pwgraph, captions/, web/, tools/
 deploy/            installer, systemd units, WirePlumber + BlueZ config, backup/restore
 tools/             asr_bench.py (caption benchmark), pw_mix_selftest.py (T3)
-tests/             168 automated tests (logic, security, simulation, headless-browser UI flows)
+tests/             173 automated tests (logic, security, simulation, headless-browser UI flows)
 docs/              the design, research, hardware, validation plan
 ```
 
 ## License
 
-**Not chosen yet** — the repository owner must pick one (see docs/09 §C). Until then, no reuse rights are granted.
+[MIT](LICENSE). Bundled third-party pieces keep their own licenses (see `src/crewline/web/static/vendor/LICENSES.md`).
