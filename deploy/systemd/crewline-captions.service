@@ -1,0 +1,15 @@
+# Runs on the CAPTION computer (not the appliance). Edit ExecStart for your engine/model.
+[Unit]
+Description=Crewline caption server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=crewline
+ExecStart=/opt/crewline/venv/bin/crewline-caption-server --listen 0.0.0.0:7070 --engine sherpa-moonshine:/opt/crewline/models/moonshine-tiny --token-file /etc/crewline/caption-token
+Restart=always
+RestartSec=3
+Nice=5
+
+[Install]
+WantedBy=multi-user.target

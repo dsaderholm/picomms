@@ -1,0 +1,16 @@
+[Unit]
+Description=Crewline web UI (dashboard, remote, admin)
+After=crewline-engine.service
+
+[Service]
+Environment=CREWLINE_STATE=/var/lib/crewline
+Environment=CREWLINE_SOCKET=%t/crewline/engine.sock
+Environment=CREWLINE_LISTEN=0.0.0.0:8080
+Environment=CREWLINE_WEB_CONFIG=/etc/crewline/web.toml
+ExecStart=/opt/crewline/venv/bin/crewline-web
+Restart=always
+RestartSec=2
+StartLimitIntervalSec=0
+
+[Install]
+WantedBy=default.target

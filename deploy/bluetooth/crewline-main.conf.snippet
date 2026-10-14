@@ -1,0 +1,14 @@
+# Applied by install.sh to /etc/bluetooth/main.conf (values to be confirmed on hardware).
+[General]
+# Classic Bluetooth only: no BLE scanning/advertising competing for airtime.
+ControllerMode = bredr
+# Faster reconnection of headsets that were switched off and on (more adapter power use).
+FastConnectable = true
+# Allow a headset to re-pair after a factory reset without confirmation prompts.
+JustWorksRepairing = always
+
+[Policy]
+AutoEnable = true
+# After a link loss, keep trying to reconnect known devices for a while.
+ReconnectAttempts = 7
+ReconnectIntervals = 1,2,4,8,16,32,64

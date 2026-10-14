@@ -97,11 +97,16 @@ def main() -> None:
                     help="echo | sherpa-streaming:DIR | sherpa-whisper:DIR[:prefix] | "
                          "sherpa-moonshine:DIR | faster-whisper:MODEL")
     ap.add_argument("--token", default="", help="shared secret (strongly recommended)")
+    ap.add_argument("--token-file", help="read the shared secret from this file")
     ap.add_argument("--workers", type=int, default=2)
     a = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s")
+    token = a.token
+    if a.token_file:
+        from pathlib import Path
+        token = Path(a.token_file).read_text().strip()
     host, _, port = a.listen.rpartition(":")
-    asyncio.run(CaptionServer(build_engine(a.engine), a.token, a.workers).serve(host or "0.0.0.0", int(port)))
+    asyncio.run(CaptionServer(build_engine(a.engine), token, a.workers).serve(host or "0.0.0.0", int(port)))
 
 
 if __name__ == "__main__":

@@ -21,6 +21,7 @@ crewline-engine = "crewline.engine:main"
 crewline-web = "crewline.web.app:main"
 crewline-caption-server = "crewline.captions.server:main"
 crewline-probe = "crewline.tools.probe:main"
+crewline-btsniff = "crewline.tools.btsniff:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -1,0 +1,21 @@
+# OPTIONAL. Forwards HFP AT commands (headset buttons, Cell2Jack digits) from
+# btmon to the engine. System service because btmon needs CAP_NET_RAW.
+# Enable only after validation test T5 shows what btmon prints for your headsets.
+[Unit]
+Description=Crewline btmon AT-command sniffer (optional)
+After=bluetooth.service
+
+[Service]
+User=crewline
+Environment=CREWLINE_SOCKET=/run/user/%U/crewline/engine.sock
+ExecStart=/opt/crewline/venv/bin/crewline-btsniff --log /var/lib/crewline/btsniff.log
+AmbientCapabilities=CAP_NET_RAW
+CapabilityBoundingSet=CAP_NET_RAW
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/crewline
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

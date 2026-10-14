@@ -1,0 +1,23 @@
+# User service for the dedicated 'crewline' account (shares that account's PipeWire).
+# Installed to /etc/systemd/user/ and enabled with `systemctl --global enable`.
+[Unit]
+Description=Crewline engine (intercom control plane)
+After=pipewire.service wireplumber.service
+Wants=pipewire.service wireplumber.service
+
+[Service]
+EnvironmentFile=-/etc/crewline/engine.env
+Environment=CREWLINE_STATE=/var/lib/crewline
+Environment=CREWLINE_SOCKET=%t/crewline/engine.sock
+ExecStart=/opt/crewline/venv/bin/crewline-engine
+Restart=always
+RestartSec=1
+# If the engine dies, pw-link links linger and people keep talking; only
+# tone commands / mute changes pause until this restarts it.
+StartLimitIntervalSec=0
+RuntimeDirectory=crewline
+RuntimeDirectoryMode=0700
+Nice=-5
+
+[Install]
+WantedBy=default.target
