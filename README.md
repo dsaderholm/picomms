@@ -36,6 +36,7 @@ browsers ◄── crewline-web ◄── unix socket ◄── crewline-engine 
 * **No audio code of our own** is on the live path; no voice gate or noise suppression (whispers and sentence starts are preserved).
 * **Phone/Chromebook remote** per person (talk, mute, groups, Call Sound, button cheat-sheet) — buttons on headsets are shortcuts, not requirements.
 * **Show mode** locks configuration only; it never silences anyone's ears.
+* **Private lines:** a permitted person can whisper to exactly one other person.
 * **Name alerts:** say someone's name (or "DJ") and their screen flashes violet; headset and rotary-phone users hear two soft pings. Call Sound (red) stays the reliable alert.
 * **Its own Wi-Fi:** the appliance can make a hotspot (5 GHz, join by QR code) and pass internet through from Ethernet or another Wi-Fi network, for venues where you cannot use the building's Wi-Fi.
 * **Made for a dark booth and for students:** dark theme by default, a red-only *night* theme, a light theme, big touch targets, plain-language setup assistant, help page, printable cheat sheets.
