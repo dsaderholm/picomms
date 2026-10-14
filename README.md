@@ -6,7 +6,10 @@ groups, understands dial codes from a rotary phone, shows **live captions and "C
 browser (phone, Chromebook, desktop), and keeps working with **no internet** and when the caption computer or
 the web page fails.
 
-> **Status: prototype. Not show-ready.** Built overnight in a cloud sandbox with *no Bluetooth hardware*:
+> **Status: shelved prototype. Not show-ready.** The original author lost the headsets this was built around and is no longer
+> working on it; it is published for anyone who wants to pick it up (see [docs/11-handoff.md](docs/11-handoff.md)).
+>
+> It was built overnight in a cloud sandbox with *no Bluetooth hardware*:
 > the logic, UI and caption pipeline are tested; everything that depends on real headsets, adapters,
 > the Cell2Jack, range, latency and whispers is **designed but not yet measured**. The validation plan
 > says exactly what to run and what each result decides. See [docs/08-known-limits.md](docs/08-known-limits.md).
@@ -15,6 +18,7 @@ the web page fails.
 
 | Read | For |
 |---|---|
+| [docs/11-handoff.md](docs/11-handoff.md) | **Where the project stands, what is untested, and where to start** |
 | [docs/01-requirements-and-assumptions.md](docs/01-requirements-and-assumptions.md) | What I assumed in place of your answers; what to correct |
 | [docs/03-hardware.md](docs/03-hardware.md) | **Recommended hardware, comparison (Pi 3B / newer Pi / x86), risks, staged purchase** |
 | [docs/02-architecture.md](docs/02-architecture.md) | Why PipeWire does the audio and Crewline only the control plane; failure isolation |

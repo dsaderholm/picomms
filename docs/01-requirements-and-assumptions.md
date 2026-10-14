@@ -9,7 +9,7 @@ wrong; most only change a quantity in the hardware list.
 
 | Fact | Source |
 |---|---|
-| Headsets are the **Bluetooth JLab GO Work** (already bought; the generation is not needed). Which buttons send anything to a host is still found by test (T5), because that depends on the unit's firmware. Dongle-based headsets are welcome *if better*, but are not the plan. | your messages |
+| Headsets were the **Bluetooth JLab GO Work** (bought, later lost, so the project was shelved; any Bluetooth headset with a boom microphone should work instead; the generation is not needed). Which buttons send anything to a host is still found by test (T5), because that depends on the unit's firmware. Dongle-based headsets are welcome *if better*, but are not the plan. | your messages |
 | The rotary phone does **tone dialling** and the **Cell2Jack 3** passes the tones through to the connected device **as tones** (audio). You have used DTMF decoders like this before. The proposed **dial codes are fine**. | your messages |
 | Money is not the main constraint; reliability is. "Way cheaper than something you would buy." | your messages |
 | You want **every** Bluetooth headset to work. | your message — see "Universal compatibility" below |
