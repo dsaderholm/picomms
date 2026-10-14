@@ -26,10 +26,10 @@ offers a mapping for a signal it has actually seen from that unit.
 
 ## B. Features you may be forgetting (my suggestions, roughly by value)
 
-Included already: per-person phone remote with cheat sheet; learn-buttons mode; readiness page; diagnosis by plain
-language; Call Sound alert; backup/restore; no retention by default.
+Included already: per-person phone remote with cheat sheet; learn-buttons mode; readiness page; setup assistant; diagnosis by plain
+language; Call Sound alert; name-mention alerts (screen + earpiece); crew announcements (text banner on every screen); own Wi-Fi hotspot with join QR; dark/night/light themes; printable sheets; backup/restore; no retention by default.
 
-1. **Standby/cue announcements** — "Standby cue 12" / "Go" as a text banner + beep on every dashboard/remote (stage-manager workflow), independent of voice.
+1. **Standby/cue announcements** — *(text banner on every dashboard/remote is built; a beep/audio version for headsets is not)* "Standby cue 12" / "Go", independent of voice.
 2. **Show profiles** — one-click "Rehearsal / Show / Load-in" presets that swap groups and permissions (then lock).
 3. **Private line** — dial/tap to speak to exactly one person ("whisper to Alex") with a privilege check.
 4. **Stuck-mic detector** — warn when an open mic has carried continuous noise for minutes (the classic open-mic-mix problem); the activity meter already has the data.

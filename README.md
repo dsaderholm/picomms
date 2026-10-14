@@ -18,7 +18,7 @@ the web page fails.
 | [docs/01-requirements-and-assumptions.md](docs/01-requirements-and-assumptions.md) | What I assumed in place of your answers; what to correct |
 | [docs/03-hardware.md](docs/03-hardware.md) | **Recommended hardware, comparison (Pi 3B / newer Pi / x86), risks, staged purchase** |
 | [docs/02-architecture.md](docs/02-architecture.md) | Why PipeWire does the audio and Crewline only the control plane; failure isolation |
-| [docs/04-validation-plan.md](docs/04-validation-plan.md) | The hardware tests (T0–T12), pass criteria, results log — **all NOT RUN** |
+| [docs/04-validation-plan.md](docs/04-validation-plan.md) | The hardware tests (T0–T13), pass criteria, results log — **all NOT RUN** |
 | [docs/07-intercom-behavior.md](docs/07-intercom-behavior.md) | Groups, lock vs mute vs lockout, dial codes (proposals), cues, gates |
 | [docs/06-operations.md](docs/06-operations.md) | Install, recovery, backup/restore, **pre-show checklist** |
 | [docs/09-ideas-and-headset-features.md](docs/09-ideas-and-headset-features.md) | Headset/earbud features usable; features you may be forgetting |
@@ -36,13 +36,16 @@ browsers ◄── crewline-web ◄── unix socket ◄── crewline-engine 
 * **No audio code of our own** is on the live path; no voice gate or noise suppression (whispers and sentence starts are preserved).
 * **Phone/Chromebook remote** per person (talk, mute, groups, Call Sound, button cheat-sheet) — buttons on headsets are shortcuts, not requirements.
 * **Show mode** locks configuration only; it never silences anyone's ears.
+* **Name alerts:** say someone's name (or "DJ") and their screen flashes violet; headset and rotary-phone users hear two soft pings. Call Sound (red) stays the reliable alert.
+* **Its own Wi-Fi:** the appliance can make a hotspot (5 GHz, join by QR code) and pass internet through from Ethernet or another Wi-Fi network, for venues where you cannot use the building's Wi-Fi.
+* **Made for a dark booth and for students:** dark theme by default, a red-only *night* theme, a light theme, big touch targets, plain-language setup assistant, help page, printable cheat sheets.
 
 ## Develop and test (no hardware needed)
 
 ```
 python3 -m venv .venv && . .venv/bin/activate
 pip install -e '.[test]' pytest-asyncio pytest-timeout segno
-pytest                                  # 121 tests (7 drive a headless browser)
+pytest                                  # 168 tests (9 drive a headless browser)
 # full simulated system with fake headsets + the web UI:
 crewline-engine --sim --state-dir /tmp/cl --socket /tmp/cl/engine.sock &
 crewline-web --listen 127.0.0.1:8080 --socket /tmp/cl/engine.sock --state-dir /tmp/cl --config /dev/null &
@@ -57,7 +60,7 @@ Simulation mode is labelled with a banner on every page and is never evidence ab
 src/crewline/      engine, routing, control, dtmf, cues, bluez, pwgraph, captions/, web/, tools/
 deploy/            installer, systemd units, WirePlumber + BlueZ config, backup/restore
 tools/             asr_bench.py (caption benchmark), pw_mix_selftest.py (T3)
-tests/             121 automated tests (logic, security, simulation, headless-browser UI flows)
+tests/             168 automated tests (logic, security, simulation, headless-browser UI flows)
 docs/              the design, research, hardware, validation plan
 ```
 

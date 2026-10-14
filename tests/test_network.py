@@ -68,7 +68,6 @@ def test_validation_rules():
         NetworkSettings(ap_band="5ghz", ap_channel=52),            # DFS channel not allowed
         NetworkSettings(ap_band="6ghz"),
         NetworkSettings(ap_interface="wlan0; rm -rf /"),
-        NetworkSettings(country="USA"),
     ):
         with pytest.raises(ConfigError):
             validate_network(bad)

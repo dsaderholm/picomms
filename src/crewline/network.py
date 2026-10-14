@@ -56,7 +56,6 @@ class NetworkSettings:
     ap_channel: int = 36
     ap_interface: str = ""           # e.g. "wlan1"; empty = choose automatically
     passthrough: bool = True         # let hotspot clients reach the internet
-    country: str = "US"              # regulatory domain (2 letters)
 
 
 def validate_network(n: NetworkSettings) -> None:
@@ -68,8 +67,6 @@ def validate_network(n: NetworkSettings) -> None:
         raise ConfigError(f"channel {n.ap_channel} is not allowed on {n.ap_band}; use one of {list(ok)}")
     if n.ap_interface and not IFACE_RE.match(n.ap_interface):
         raise ConfigError("invalid network interface name")
-    if not re.fullmatch(r"[A-Za-z]{2}", n.country or ""):
-        raise ConfigError("country must be a 2-letter code")
     if n.ap_enabled:
         if not (1 <= len(n.ap_ssid.encode()) <= 32):
             raise ConfigError("hotspot name must be 1-32 characters")

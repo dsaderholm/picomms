@@ -15,7 +15,11 @@ wrong; most only change a quantity in the hardware list.
 | Priorities: **range → latency → audio quality**. | your messages |
 | Students/crew carry no Chromebooks; the Chromebooks and phones are used for dashboards. | your messages |
 | Captions, dashboard and remote must work on **phones, Chromebooks and a desktop**. | your message |
-| Open-source on GitHub for other schools/venues. Name "PicoMMS" is replaceable → renamed **Crewline**. | your messages |
+| Open-source on GitHub for other schools/venues. The name "PicoMMS"/"PiComms" was yours to replace → **Crewline** (say if you prefer to keep PiComms; it is a one-place rename). | your messages |
+| The UI must work for high-school students, be **dark-friendly** (an open, dark tech booth), and still be feature-rich. | your messages |
+| The appliance should be able to **create its own Wi-Fi network** (probably a must for ICS) and pass internet through from Ethernet or another Wi-Fi network. | your messages |
+| Name mentions in captions should be hard to miss (screen flash; also for handset/rotary-phone users). | your messages |
+| You own **Raspberry Pi 3Bs and mini PCs**; the JLab headsets were just bought. | your messages |
 | You want per-headset button use maximised, with a phone web page as backup and a cheat-sheet that teaches the buttons. | your message |
 
 ## The essential questions, with the answer I assumed
@@ -24,7 +28,7 @@ wrong; most only change a quantity in the hardware list.
 |---|---|---|
 | How many simultaneous endpoints? | **Design for 8 headsets + the rotary phone (9).** Milestone 1 uses 2 headsets + the rotary. | Number of Bluetooth adapters (see 03-hardware.md). |
 | Exact JLab model/generation? | **Unknown — please read the model name on the box or headset.** The original GO Work and the "Gen 2" have different published specs (Gen 2: Bluetooth 5.3, HSP/HFP/A2DP/AVRCP, quick-mute with mic LED, multipoint, 55+ h battery). All hardware claims about "JLab buttons" are therefore *unverified for your units*. | Which button signals exist. Nothing structural. |
-| What hardware do you already own? | **Unknown. Possible Raspberry Pi 3B (unconfirmed).** | Whether the first test needs a purchase. Plan: borrow any x86 laptop running Debian 13 from a USB stick for milestone 1. |
+| What hardware do you already own? | **Raspberry Pi 3Bs and mini PCs (your words; models unknown).** Prototype on a mini PC; use a Pi 3B only as a spare or an extra data point (its onboard Bluetooth cannot carry voice and its Wi-Fi is 2.4 GHz only). | Whether the first test needs a purchase: probably only USB Bluetooth adapters (and a 5 GHz Wi-Fi adapter for the hotspot). |
 | Budget | **No hard cap; minimise risk, not cost.** | — |
 | Separate computer for captions? | **Assumed yes** (a desktop/laptop you already own, or the same mini PC if it benchmarks well). | Whether captions share the appliance CPU. |
 | Which Cell2Jack? How does it reach the host? | **It is a Bluetooth hands-free device from the host's point of view** (it presents itself like a headset to a phone). We pair it to the appliance instead of a phone. Whether the "tones" arrive as **audio** (in-band) or as **AT commands** (`AT+VTS`/`ATD`) is **unknown** — the design decodes both and test T4 settles it. | Which tone path is primary. |

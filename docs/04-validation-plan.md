@@ -84,6 +84,12 @@ charged, `journalctl --user -u crewline-engine -f` open in a second terminal.
 * **Pass:** documented coverage map at least as good as the current Chromebook setup in every location crew actually work; no *silent* drops (a dropped link must raise the readiness warning).
 * **Record:** adapter positions, codec, dropouts per route. Output feeds the adapter placement in the real install.
 
+### T7b — Long-range adapter bake-off
+
+* **Do:** with one headset and the adapters you bought for the bake-off (see 03-hardware.md "Long-range adapter candidates": a Class 1 RTL8761B with detachable antenna, and optionally a CSR8510 Class 1), repeat the T7 walk from the same spot with each adapter and antenna, headset worn normally. Record where each first glitches and where each drops.
+* **Pass:** your call; the decision is which adapter (and antenna) becomes the default. Also confirm HFP voice works at all on each (`crewline-probe inventory`, T1).
+* **Record:** chipset (`lsusb`), class, antenna, firmware, codec, distances.
+
 ## T8 — Recovery
 
 For each event, record *seconds to restored audio* and *whether a human had to act*:
@@ -128,11 +134,25 @@ Method (two-channel recording on **one** device so one clock times both events):
 * **Also:** concurrency — replay N simultaneous recordings and record CPU use and end-to-end caption delay (speech end → text visible on the dashboard).
 * **Pass:** your call on WER and delay; the sandbox numbers in 10-caption-benchmarks.md are only a starting point.
 
+## T12a — Name-mention alerts
+
+* **Do:** with captions running on the real caption computer, add a person's name (and a nickname) under Admin → People → Name alerts, open the dashboard on a phone and a laptop, and have someone say the name, in a normal voice and in a whisper, in a sentence and alone. Check the violet flash, the chime/vibration, and the two soft pings in a headset and on the rotary phone. Say the name repeatedly and check the earpiece cooldown (default 8 s).
+* **Pass:** your call on hit rate (it depends on the recogniser; record it); no ping storms; never a mention for the speaker's own name; Call Sound is unaffected.
+
 ## T12 — Full-crew rehearsal and soak
 
 * **Do:** the intended endpoint count (8 headsets + rotary), real rehearsal ≥2 hours, show mode **on**, deliberate faults injected (switch a headset off, unplug an adapter, kill the caption server). Keep an incident log: time, symptom, who noticed, how fixed.
 * **Pass:** no incident needed more than the documented recovery action; no unexplained audio glitches; readiness page accurate (what it said "ready" about really was).
 * **Until this passes, do not call the system show-ready.** (See 08-known-limits.md.)
+
+---
+
+## T13 — Hotspot and internet passthrough
+
+* **Do:** with the Wi-Fi adapter chosen for the hotspot (check `iw list` for AP mode and 5 GHz): Admin → Network → start the hotspot on 5 GHz (channel 36). Join from a phone and a Chromebook with the QR code; open `http://crewline.lan:8080`. Plug Ethernet with internet into the appliance: phones should reach the internet; flip "Internet passthrough" off: they must not (and must still reach the dashboard). Repeat with the uplink being a second Wi-Fi adapter joined to another network. Reboot the box: the hotspot should return by itself. Confirm show mode locks network changes.
+* **Then:** with 8 headsets' worth of load (or as many as you have) and phones streaming video on the hotspot, repeat the T7 range walk and a T12-style 30-minute soak: Bluetooth dropouts must not be worse than with the hotspot off. Try a 2.4 GHz hotspot once to see the difference for yourself.
+* **Pass:** hotspot starts and returns after reboot; join QR works on iOS and Android; passthrough on/off behaves; Bluetooth is not measurably worse with the hotspot busy.
+* **Record:** adapter chipset, driver/module options, channel, clients, throughput, any crashes (`journalctl -u NetworkManager`).
 
 ---
 
@@ -161,4 +181,4 @@ Copy this table into `docs/results/<date>-<test>.md` for each run, with raw outp
 
 ### Results so far
 
-*Nothing from hardware yet.* Software-only results that exist today: 121 automated tests (all passing in the build sandbox), the DTMF talk-off check on one speech clip (zero false digits across 18 speed/gain variants), and the caption benchmark in 10-caption-benchmarks.md.
+*Nothing from hardware yet.* Software-only results that exist today: 180 automated tests (all passing in the build sandbox), the DTMF talk-off check on one speech clip (zero false digits across 18 speed/gain variants), and the caption benchmark in 10-caption-benchmarks.md.

@@ -16,10 +16,18 @@ measure, then buy the rest.
 | 4 | **Powered USB 2.0 hub (7-port), plain USB 2.0** — *not* USB 3.0 | 1 | Placement and extension, not power (a dongle draws little). USB 3.0 ports radiate broadband noise in the 2.4 GHz band; Plugable's and Intel's guidance is to keep dongles on USB 2.0 ports away from USB 3.0 ([Plugable KB](https://kb.plugable.com/en_US/the-range-of-the-plugable-bluetooth-adapter-seems-poor-and-or-audio-is-skipping-or-lagging)). | not verified |
 | 5 | **USB 2.0 extension cables, 1.5–3 m**, or active 5 m USB 2.0 repeater cables | 2–4 | To get each adapter out of the metal box, up onto a shelf/stand, and **near the people it serves**. | not verified |
 | 6 | Small **UPS** or surge strip with a power switch labelled "do not touch" | 1 | A glitch that reboots the box is a show stopper; the box reboots into a working state, but still. Optional. | not verified |
-| 7 | **Ethernet cable / switch port**, DHCP reservation (or static IP) | 1 | Local IP and `http://crewline.local:8080` (mDNS). | — |
+| 7 | **Ethernet cable / switch port**, DHCP reservation (or static IP) | 1 | Local IP and `http://crewline.local:8080` (mDNS); also the preferred internet source for hotspot passthrough. | — |
+| 7b | **Dual-band USB Wi-Fi adapter with AP mode** (e.g. ALFA AWUS036ACM) — *only if the appliance should create its own Wi-Fi* | 0–1 | See "Hotspot hardware". | ≈ $40–60 (not verified) |
 | 8 | **Captions:** any laptop/desktop already available (≥4 cores) running `crewline-caption-server`; *optional* a second mini PC | 0–1 | Benchmark first (T11). | — |
 
-Nothing else is required: no sound card, no microphone, no Wi-Fi.
+Nothing else is required for the intercom itself: no sound card, no microphone. **If the appliance
+should make its own Wi-Fi network** (see "Hotspot hardware" below, which is likely for ICS), add one
+dual-band USB Wi-Fi adapter that can act as an access point.
+
+**You already own hardware:** you said you have Raspberry Pi 3Bs and several mini PCs. Use a **mini PC** for
+the prototype and the show (x86, SSD, Ethernet, USB 2/3). Keep the Pi 3B for tests or as a spare; see the host
+comparison. The JLab headsets need no purchase; only the USB Bluetooth adapters (and optionally a Wi-Fi
+adapter) are new money.
 
 ## Host comparison (Pi 3B reuse vs newer Pi vs x86)
 
@@ -33,7 +41,7 @@ Nothing else is required: no sound card, no microphone, no Wi-Fi.
 | Boot after power loss | automatic | automatic | BIOS setting required |
 | Verdict | **Good enough for the Milestone-1 experiment, not for the show** | fine if you prefer it; no price advantage now | **Recommended** |
 
-If you already own a Pi 3B, use it to repeat the milestone tests *with USB adapters* — it
+You told me you own Pi 3Bs and mini PCs. The mini PC is the recommended host. If you want a free data point, use a Pi 3B to repeat the milestone tests *with USB adapters* — it
 gives a free second data point on whether a Pi is viable.
 
 ## Adapter evidence (what is and is not known)
@@ -67,20 +75,64 @@ gives a free second data point on whether a Pi is viable.
   limit is 2; 3 if 3 links/adapter work. The cost of being wrong is two $15 adapters, which is why the
   staged purchase is cheap.
 
+## Hotspot hardware (the appliance makes its own Wi-Fi)
+
+For venues where you cannot use the building's Wi-Fi, the appliance can be the Wi-Fi network (Admin → Network)
+and share internet from Ethernet or from another Wi-Fi network. This needs a Wi-Fi radio that supports
+**access-point (AP) mode**; check with `iw list` (look for `AP` under "Supported interface modes").
+
+* **Use 5 GHz.** Bluetooth lives at 2.4 GHz; a 2.4 GHz hotspot on the same box competes with every headset.
+  Crewline defaults to 5 GHz and offers only non-DFS channels (36–48, 149–165) because radar-avoidance
+  channels can make the hotspot vanish. It warns before you choose 2.4 GHz.
+* **A separate adapter, placed away from the Bluetooth adapters** (extension cable). Do not rely on a combo
+  Wi-Fi/Bluetooth chip for the headsets.
+* **Candidate: ALFA AWUS036ACM (MediaTek MT7612U).** In-kernel driver since Linux 4.19 per the
+  [maintainer's page](https://github.com/morrownr/7612u); it notes 5 GHz AP mode may want the `disable_usb_sg` module
+  option and that DFS channels are not supported in AP mode (we avoid them anyway). One
+  [forum report](https://forum.openwrt.org/t/ap-mode-crashing-raspberry-pi-3b-w-two-alfa-awus036acm-mt7612u-wireless-usb-adapters-openwrt-21-02/115931)
+  has AP mode crashing under heavy load with *two* such adapters on a Pi 3B/OpenWrt. Not tested by me; verify with T13.
+* **Pi 3B:** its onboard Wi-Fi is 2.4 GHz only, so a Pi 3B hotspot would share the headsets' band. If you use a Pi
+  for the hotspot, add a 5 GHz USB adapter.
+* **Passthrough:** plug the venue's Ethernet into the appliance (preferred) or join the venue's Wi-Fi with a
+  *second* Wi-Fi adapter (one radio cannot reliably be hotspot and client at once). The intercom never needs
+  internet; it is only for phones on the hotspot and updates.
+* The hotspot password is stored on the appliance (and in backups); the join QR and print sheet show it to the crew.
+  WPA2-PSK (CCMP).
+
 ## Range plan (priority 1)
 
-Range is improved mostly by **geometry**, not by a more powerful dongle:
-* A Bluetooth link works only as far as the *weaker* direction. Headsets are low-power Class 2 devices;
-  a "long-range" Class 1 host adapter improves the host→headset leg but not the headset→host leg
-  (engineering reasoning; not measured). So extra transmit power is worth less than closeness.
+Range is improved mostly by **geometry**, then by adapter choice:
 * Put adapters **high, in the open, close to the crew's working areas**, on 2.0 hubs/extension cables
   (not inside the metal PC, not behind a rack, not beside USB 3.0 ports).
 * Use **several adapters in different places** (e.g. one stage-left, one stage-right, one at the booth)
   and pair each headset to the adapter that serves its normal area. Pairing is per adapter,
   so assignment is stable (test T9).
+* **Antenna gain helps in both directions** (a better antenna also hears better), and a Class 1 radio
+  usually has a better *receive* sensitivity as well as more transmit power. So a Class 1 adapter with a
+  detachable external antenna is a real, if modest, range upgrade. What it cannot fix is a weak
+  *headset* transmitter (Class 2, tiny antenna, worn on a head): the uplink is still the limit, which is why
+  geometry comes first. This corrects an earlier note in these docs that said extra host power only helps one direction.
 * Existing coverage "from the central area" is a good baseline: the first range test (T7) repeats your
   current Chromebook-to-headset walk with the adapter in the same place.
 * The headset's own antenna and how it is worn dominate behind scenery; test with the actual people.
+
+### Long-range adapter candidates (none tested by me; treat as a bake-off, T7b)
+
+I searched for long-range options. The honest result: **vendor range claims ("100 m") are open-air
+best case and not independently measured; I found no Linux HFP range test of any of them.** Choose by chipset,
+because the chipset decides whether Linux and HFP work:
+
+| Candidate | Chipset (per listing) | Notes | Risk |
+|---|---|---|---|
+| **StarTech Bluetooth 5.3 Class 1 USB adapter** (AV53C1-USB-BLUETOOTH) | RTL8761BUE per one retailer listing | Class 1, 5.3; listing says Linux kernel ≥ 5.19; antenna type not clear from the listings. Same chip family as the ASUS/TP-Link adapters, so the wideband path in `btusb` applies. | Verify chipset with `lsusb`/`crewline-probe inventory`; range unmeasured |
+| **Techkey Bluetooth 5.4 Class 1** | not stated | 5 dBi external antenna per one review blog (a claimed 120 ft through three interior walls, one reviewer's test); Linux support not confirmed | Unknown chipset; check before buying |
+| **Feasycom FSC-BP119** | CSR8510A10 (vendor datasheet) | Class 1, SMA connector for a swappable antenna, HFP 1.5/HSP 1.2, plug-and-play on Linux in HCI mode per the vendor | **CVSD only (no wideband)**: narrower voice, but arguably fine under *range → latency → quality*. CSR clones are common; buy from the vendor |
+| Generic "100 m" RTL8761B sticks | RTL8761B | Usually Class 2 or Class 1 with a stub antenna; spec sheet rarely says | Likely no better than the ASUS/TP-Link |
+
+Plan: buy **one** of each of the first rows with a detachable antenna next to the validation kit, then run the
+same walk-away test (T7) with each, same spot, same headset, and record the result in `docs/compatibility.md`.
+Do not buy five of anything before that. A *directional* or higher-gain antenna on an SMA adapter is the cheapest
+experiment; keep the antenna vertical and in the open, and avoid putting it near a USB 3 cable.
 
 ## Staged purchase (recommended order)
 
@@ -101,5 +153,6 @@ Range is improved mostly by **geometry**, not by a more powerful dongle:
 | Cell2Jack only sends tones as AT commands, or closes voice when on-hook | medium | decoder supports in-band and AT; `crewline-btsniff`; T4 decides |
 | JLab buttons send nothing useful to a host | **high for the mute button (local to headset)**; medium for others | phone remote + dial codes carry every essential function |
 | Headset multipoint steals the headset to a student's phone | medium | admin procedure: forget the headset on phones; readiness shows disconnected |
-| School Wi-Fi/Ethernet blocks client-to-client traffic (AP isolation) | medium | put the appliance on a wired port in the same VLAN as the viewing devices; use a dedicated travel router if needed |
+| School Wi-Fi/Ethernet blocks client-to-client traffic (AP isolation) | medium | **use the appliance's own hotspot** (viewers join it directly), or a wired port in the same VLAN |
+| The hotspot hurts Bluetooth range (same 2.4 GHz band, or adapter proximity) | medium if 2.4 GHz; low on 5 GHz | 5 GHz default, separate adapter on a cable, T13 + T7 with the hotspot busy |
 | 2.4 GHz crowding (Wi-Fi, wireless mics, other Bluetooth) | site-specific | Bluetooth AFH hops around Wi-Fi; avoid Wi-Fi-heavy placement; T7 in the real room during a show |

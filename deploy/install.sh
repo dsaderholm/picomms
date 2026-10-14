@@ -9,6 +9,8 @@ PREFIX=/opt/crewline
 STATE=/var/lib/crewline
 CONF=/etc/crewline
 WHEELHOUSE="${1:-}"        # optional: directory of pre-downloaded wheels for offline installs
+COUNTRY="${CREWLINE_COUNTRY:-US}"   # Wi-Fi regulatory domain for the hotspot (2 letters); set it to where you operate
+HOSTNAME_WANTED="${CREWLINE_HOSTNAME:-}"  # optional: e.g. 'crewline' so phones can open http://crewline.local:8080
 
 [ "$(id -u)" = 0 ] || { echo "run as root"; exit 1; }
 . /etc/os-release
@@ -22,7 +24,8 @@ apt-get update
 DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
   pipewire pipewire-bin pipewire-audio wireplumber libspa-0.2-bluetooth \
   bluez python3 python3-venv python3-pip usbutils rfkill chrony ca-certificates \
-  libsndfile1 pulseaudio-utils avahi-daemon
+  libsndfile1 pulseaudio-utils avahi-daemon \
+  network-manager dnsmasq-base nftables iw wireless-regdb polkitd sudo
 
 wp_ver=$(wireplumber --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+' | head -1 || echo "0.0")
 echo "WirePlumber ${wp_ver}; PipeWire $(pipewire --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)"
@@ -71,6 +74,23 @@ viewer_mode = "open"        # "open" = anyone on the LAN may view the dashboard;
 ack_requires_admin = false
 TOML
 
+echo "== hotspot and internet passthrough (NetworkManager)"
+# The hotspot is a NetworkManager profile ('shared' mode: DHCP, DNS and NAT included).
+# NetworkManager must manage Wi-Fi. Raspberry Pi OS already does; on plain Debian with ifupdown it needs
+# to be allowed to (see docs/06-operations.md 'Network'). The installer never touches your existing
+# Ethernet or Wi-Fi connections.
+install -m 0755 "$SRC/deploy/crewline-netctl.sh" /usr/local/sbin/crewline-netctl
+install -m 0440 "$SRC/deploy/sudoers.d/crewline" /etc/sudoers.d/crewline
+visudo -cf /etc/sudoers.d/crewline >/dev/null || { rm -f /etc/sudoers.d/crewline; echo "sudoers file invalid; removed"; exit 1; }
+install -D -m 0644 "$SRC/deploy/polkit/50-crewline-networkmanager.rules" /etc/polkit-1/rules.d/50-crewline-networkmanager.rules
+install -D -m 0644 "$SRC/deploy/networkmanager/crewline-dnsmasq.conf" /etc/NetworkManager/dnsmasq-shared.d/crewline.conf
+echo "options cfg80211 ieee80211_regdom=${COUNTRY}" > /etc/modprobe.d/crewline-regdom.conf
+iw reg set "${COUNTRY}" 2>/dev/null || true
+if [ -n "$HOSTNAME_WANTED" ]; then hostnamectl set-hostname "$HOSTNAME_WANTED"; fi
+systemctl enable NetworkManager.service avahi-daemon.service || true
+systemctl reload NetworkManager.service 2>/dev/null || true
+systemctl restart polkit.service 2>/dev/null || true
+
 echo "== services"
 install -D -m 0644 "$SRC"/deploy/systemd/crewline-engine.service /etc/systemd/user/crewline-engine.service
 install -D -m 0644 "$SRC"/deploy/systemd/crewline-web.service /etc/systemd/user/crewline-web.service
@@ -93,4 +113,5 @@ ln -sf "$PREFIX/venv/bin/crewline-web" /usr/local/bin/crewline-web
 echo
 echo "Installed. Open  http://$(hostname -I | awk '{print $1}'):8080/admin"
 [ -f "$STATE/FIRST-RUN-ADMIN-PASSWORD.txt" ] && { echo "First-run admin password (delete the file after saving it):"; sed -n 2p "$STATE/FIRST-RUN-ADMIN-PASSWORD.txt"; }
+echo "Hotspot: Admin > Network (country code ${COUNTRY}; set CREWLINE_COUNTRY=XX and re-run to change)."
 echo "Then work through docs/04-validation-plan.md. Do not rely on this for a show before that."

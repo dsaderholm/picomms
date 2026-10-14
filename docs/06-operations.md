@@ -16,7 +16,7 @@
    (offline installs: `pip download` the wheels once and pass the folder as the first argument).
 5. The installer prints the **first-run admin password** once (also in `/var/lib/crewline/FIRST-RUN-ADMIN-PASSWORD.txt`).
    Change it: `sudo -u crewline crewline-web --set-password`, then delete that file.
-6. Open `http://<ip>:8080/admin`, log in, run **Status → readiness**.
+6. Open `http://<ip>:8080/admin`, log in, run **Overview** (and the Setup assistant on first use).
 7. Pair headsets (Devices → open pairing window → *Pair as…*). Name them by person/role.
 8. Send each person their **Remote link** (Endpoints → *Remote link*, QR code for phones).
 9. Put the box on a UPS or at least a surge strip. Do not run it from a laptop battery.
@@ -72,8 +72,8 @@ crewline-probe sco          # voice links per adapter (hcitool)
 * **Show mode** (Admin → top bar) locks configuration only. Crew can still talk, mute, change groups within their
   permissions, call Sound; reconnecting a headset is allowed. See 07-intercom-behavior.md.
 * **Never expose the appliance to the internet.** It refuses non-private client addresses by default, but also do not
-  port-forward it and keep it off guest Wi-Fi. School networks sometimes block client-to-client traffic: put the appliance
-  and the viewing devices on the same VLAN/SSID, or give it a small dedicated Wi-Fi router.
+  port-forward it and keep it off guest Wi-Fi. School networks sometimes block client-to-client traffic: either use the
+  appliance's own hotspot (below), put the appliance and the viewing devices on the same VLAN/SSID, or give it a small dedicated Wi-Fi router.
 * **HTTPS (optional):** the pages work over plain HTTP on the LAN. Two browser features need HTTPS and are hidden otherwise:
   "keep screen on" (wake lock). If you want it, put Caddy/nginx in front with a certificate from your school CA.
 * Viewer PIN: set `viewer_mode = "pin"` and `viewer_pin` in `/etc/crewline/web.toml` if you do not want the dashboard
@@ -81,11 +81,36 @@ crewline-probe sco          # voice links per adapter (hcitool)
 * **Privacy:** audio is never recorded (not implemented). Transcripts are not kept unless an admin ticks the box; the
   Captions tab shows that state.
 
+### Own Wi-Fi hotspot and internet passthrough (Admin → Network)
+
+For venues where you cannot use the building's Wi-Fi. **Not yet run on real hardware: validation test T13.**
+
+* The hotspot is a NetworkManager profile (`crewline-ap`, WPA2-PSK, DHCP/DNS/NAT by NetworkManager's "shared" mode). The appliance is
+  `10.42.0.1`; phones can open **`http://crewline.lan:8080`** (or the IP). The Network page makes a name and password for you, shows a
+  **join QR code** (point a phone camera at it) and the same QR on the printable sheets.
+* **Band:** 5 GHz by default and strongly recommended (Bluetooth shares 2.4 GHz). Channels are limited to non-DFS (36–48, 149–165). Set the regulatory domain
+  at install: `sudo CREWLINE_COUNTRY=US ./deploy/install.sh` (use your country).
+* **Hardware:** a Wi-Fi adapter that supports AP mode, separate from the Bluetooth adapters and on a cable away from them (03-hardware.md).
+* **Internet passthrough:** plug the venue's Ethernet into the appliance (best), or join another Wi-Fi network with a second Wi-Fi adapter (Network page lists
+  adapters, scans and joins). The switch "Internet for hotspot devices" turns forwarding on or off: with it off, phones can reach Crewline but not the
+  internet (a `crewline_guard` nftables table, installed by a tiny root helper `crewline-netctl` that the `crewline` account may run via `sudo` and that
+  checks its own arguments). The intercom never needs internet.
+* **Show mode locks all network settings** (changing them would disconnect every phone). Starting the appliance with the hotspot enabled brings it back by itself.
+* If NetworkManager does not manage Wi-Fi on your OS (plain Debian with ifupdown), install `network-manager` and let it manage the Wi-Fi adapter (remove that adapter from `/etc/network/interfaces`).
+* Hotspot password: it is in the settings backup file; store that file like a password. Change it on the Network page (all phones must rejoin).
+
+### Name mentions
+
+Admin → People → *Name alerts*: words that should get a person's attention when captions hear them (a name, a nickname; "DJ" also matches "D J", "dee jay"). The matching person's
+dashboard flashes violet with an optional chime/vibration (set per device in the dashboard's settings), and, if they have a headset or the rotary phone, they hear two soft pings
+(at most once per 8 s per person by default). It is *supplementary*: captions can miss or mishear a name, so **Call Sound** (red, deliberate) remains the reliable alert.
+
 ## Pre-show checklist (≈3 minutes)
 
 1. Power on the box and the caption computer (if used). Wait ~1 minute.
 2. Switch on every headset (and the Cell2Jack/rotary phone). Stand near the crew area for ~20 s.
-3. Open **Admin → Status** (or `/admin` on the booth computer). Everything green? Read any red/yellow line — each says what to do.
+2b. If using the hotspot: **Admin → Network** shows it running; a phone joined with the QR sees the dashboard.
+3. Open **Admin → Overview** (or `/admin` on the booth computer). Everything green? Read any red/yellow line — each says what to do.
    * ✗ *no two-way audio*: switch that headset off/on; if it persists use **Diagnostics → Diagnose**.
 4. **Microphone test** and **Earpiece test** on any headset that changed since the last show (Diagnostics).
 5. Dial `1`, then `2` on the rotary phone: you should hear 1 beep, then 2 beeps; the other headsets must **not** hear the tones.

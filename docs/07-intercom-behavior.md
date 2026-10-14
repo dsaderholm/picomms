@@ -91,6 +91,10 @@ narrowband codec and a real headset reproduce them clearly is for T1/T5.
   (where proven), or a dial code. **Never** by the speech recogniser.
 * Shown as a persistent red banner on every dashboard until acknowledged; repeated presses by the same person collapse into one alert.
   Optional browser beep/vibration (user-enabled).
-* Mentions of "DJ" in captions are highlighted — supplementary only, and configurable in the Captions tab.
+* **Name mentions** (supplementary, violet, never red): when captions contain a person's configured words, *their* dashboards and remotes flash violet and,
+  if they wear a headset or hold the rotary phone, they hear two soft pings (the `mention` cue; one cue per target per 8 s by default; the screen alert is not rate-limited,
+  and many mentions collapse to the newest with "N earlier / Clear all"). The speaker is never alerted about their own words. Words are matched whole-word and expanded
+  (e.g. "DJ" → "d j", "dee jay"). Captions can miss or mishear: this is a nudge, not a guarantee.
+* Everyone sees calls; mentions show only for the person the viewer says they are (set per device; defaults to the sound operator).
 * **Ringing the rotary phone** to alert you is **not built**: it needs the host to signal an incoming call to the Cell2Jack
   (`RING`/`+CIEV` over HFP), which PipeWire's native backend does not do without a modem. Decide after T4 whether it matters.
