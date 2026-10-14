@@ -86,3 +86,11 @@ def test_parse_managed_objects():
     d = {x.address: x for x in devices}
     assert d[A].supports_hfp and d[A].battery == 80 and d[A].rssi == -48 and d[A].adapter == adapters[0].address
     assert d[B].battery is None and d[B].rssi is None      # unknown stays None
+
+
+def test_audio_up_tolerates_missing_profile_property_but_rejects_a2dp():
+    objs = [node(10, "bluez_input.AA_BB_CC_DD_EE_01.0", "Audio/Source", A, profile=""),
+            node(11, "bluez_output.AA_BB_CC_DD_EE_01.1", "Audio/Sink", A, profile="")]
+    assert parse_dump(objs).audio_up(A) is True
+    objs[1] = node(11, "bluez_output.AA_BB_CC_DD_EE_01.1", "Audio/Sink", A, profile="a2dp-sink")
+    assert parse_dump(objs).audio_up(A) is False

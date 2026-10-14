@@ -62,10 +62,16 @@ class GraphSnapshot:
     links: dict[int, tuple[str, str]] = field(default_factory=dict)
 
     def audio_up(self, address: str) -> bool:
-        """Both a microphone and an earpiece node exist in the HFP profile."""
+        """Both a microphone and an earpiece node exist and neither is a music-only (A2DP) node.
+
+        A node with no ``api.bluez5.profile`` property is accepted (the property name was read
+        from PipeWire source but not yet seen on real hardware, so its absence must not
+        disable the feature); an explicit non-HFP profile is rejected.
+        """
         s, k = self.sources.get(address), self.sinks.get(address)
-        return bool(s and k and s.profile.startswith("headset-head-unit")
-                    and k.profile.startswith("headset-head-unit"))
+        if not (s and k):
+            return False
+        return all(n.profile in ("", None) or n.profile.startswith("headset-head-unit") for n in (s, k))
 
 
 def _addr_from(props: dict) -> str | None:

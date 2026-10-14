@@ -211,3 +211,31 @@ async def test_engine_survives_bluez_not_ready(tmp_path):
     assert any(c["name"] == "BlueZ" and c["level"] == "fail" for c in eng.readiness())
     assert await wait_for(lambda: eng.bt_ok, 5)
     await eng.stop()
+
+
+async def test_engine_restart_does_not_tear_down_live_links(tmp_path):
+    """Links linger in PipeWire across an engine restart. Before Bluetooth state is read,
+    the engine must not treat 'unknown' as 'disconnected' and delete them."""
+    from crewline.bluez import SimBluetooth
+    from crewline.store import ConfigStore
+
+    class SlowBt(SimBluetooth):
+        async def start(self):
+            await asyncio.sleep(0.6)             # BlueZ answers late after a restart
+
+    g = SimGraph()
+    for a in (SOUND, ALEX):
+        g.add_device(SimDevice(a, "x"))
+    # persisted configuration from "before the restart"
+    s = ConfigStore(tmp_path / "config.json"); s.load()
+    s.upsert_endpoint(s.config.endpoint("sound").__dict__ | {"address": SOUND})
+    s.upsert_endpoint({"id": "alex", "name": "Alex", "address": ALEX, "listen": ["tech"], "talk": ["tech"],
+                       "listen_allowed": ["tech"], "talk_allowed": ["tech"]})
+    g.links = {(SOUND, ALEX), (ALEX, SOUND)}               # lingering links from the previous engine
+    eng = Engine(tmp_path, g, SlowBt(g), simulated=True)
+    await eng.start()
+    await asyncio.sleep(0.4)                                # several cycles run before BlueZ is ready
+    assert g.links == {(SOUND, ALEX), (ALEX, SOUND)}, "links were torn down while BT state was unknown"
+    assert await wait_for(lambda: eng.bt_ok and eng._bt_known, 5)
+    assert g.links == {(SOUND, ALEX), (ALEX, SOUND)}
+    await eng.stop()

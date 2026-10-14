@@ -110,6 +110,7 @@ class Engine:
         self.links_now: set[tuple[str, str]] = set()
         self.pw_ok = False
         self.bt_ok = False
+        self._bt_known = False      # True after the first successful device refresh
         self._kick = asyncio.Event()
         self._tasks: list[asyncio.Task] = []
         self._last_published = ""
@@ -317,6 +318,7 @@ class Engine:
             self._last_bt = now
             try:
                 self.adapters, self.devices = await self.bt.refresh()
+                self._bt_known = True
             except Exception as exc:
                 log.debug("bt refresh failed: %s", exc)
         try:
@@ -345,7 +347,12 @@ class Engine:
                 continue
             d = devs.get(ep.address)
             was = (st.connected, st.audio_up)
-            st.connected = bool(d and d.connected)
+            if self._bt_known:
+                st.connected = bool(d and d.connected)
+            else:
+                # Bluetooth state not read yet (engine just started, BlueZ slow). Trust the
+                # PipeWire graph for now so that a restart never tears down live links.
+                st.connected = self.snap.audio_up(ep.address)
             st.audio_up = st.connected and self.snap.audio_up(ep.address)
             n = self.snap.sources.get(ep.address)
             rt.codec = n.codec if n else ""

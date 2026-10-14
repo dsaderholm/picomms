@@ -16,6 +16,7 @@ import os
 import time
 import tomllib
 from pathlib import Path
+from urllib.parse import quote
 
 import aiohttp
 from aiohttp import web
@@ -406,11 +407,11 @@ def make_app(args) -> web.Application:
 
     @routes.get("/api/admin/diagnose/{id}")
     async def adiagnose(req):
-        return await proxy(req, "GET", f"/diagnose/{req.match_info['id']}")
+        return await proxy(req, "GET", f"/diagnose/{quote(req.match_info['id'], safe='')}")
 
     @routes.get("/api/admin/why")
     async def awhy(req):
-        return await proxy(req, "GET", f"/why?src={req.query['src']}&dst={req.query['dst']}")
+        return await proxy(req, "GET", f"/why?src={quote(req.query['src'], safe='')}&dst={quote(req.query['dst'], safe='')}")
 
     @routes.get("/api/admin/log")
     async def alog(req):
@@ -418,7 +419,7 @@ def make_app(args) -> web.Application:
 
     @routes.get("/api/admin/buttons/{id}")
     async def abuttons(req):
-        return await proxy(req, "GET", f"/buttons/{req.match_info['id']}")
+        return await proxy(req, "GET", f"/buttons/{quote(req.match_info['id'], safe='')}")
 
     @routes.get("/api/admin/config/export")
     async def aexport(req):
