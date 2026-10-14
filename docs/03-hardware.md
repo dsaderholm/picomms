@@ -24,6 +24,10 @@ Nothing else is required for the intercom itself: no sound card, no microphone. 
 should make its own Wi-Fi network** (see "Hotspot hardware" below, which is likely for ICS), add one
 dual-band USB Wi-Fi adapter that can act as an access point.
 
+**Sized for your crew (about 6 endpoints: 3 JLab + Cell2Jack + ~2 others):** with the planning assumption of 2 voice links per adapter that is **3 USB Bluetooth adapters**, plus 1 spare. If T2/T3 show 3 links per adapter, 2 may do. Spreading the adapters (booth, stage left, stage right) also helps range.
+
+**Your old Intel NUC (i7/i8-generation) is a good host:** more than enough CPU (it could also run captions; benchmark in T11), SSD, Ethernet, and set BIOS "power on after AC loss". Do **not** rely on its internal Wi-Fi/Bluetooth card for the headsets: it sits inside a metal case (poor range) and Intel combo cards are untested here for multiple voice links. Use external USB adapters on short cables, and treat the internal one as a free extra data point in T2. Its internal Wi-Fi may not be able to host a 5 GHz hotspot (many Intel cards restrict it): check `iw list` for `AP` and 5 GHz, otherwise use the USB Wi-Fi adapter.
+
 **You already own hardware:** you said you have Raspberry Pi 3Bs and several mini PCs. Use a **mini PC** for
 the prototype and the show (x86, SSD, Ethernet, USB 2/3). Keep the Pi 3B for tests or as a spare; see the host
 comparison. The JLab headsets need no purchase; only the USB Bluetooth adapters (and optionally a Wi-Fi

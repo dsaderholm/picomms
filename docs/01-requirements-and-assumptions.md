@@ -27,7 +27,7 @@ wrong; most only change a quantity in the hardware list.
 
 | Question | Assumption used | What changes if wrong |
 |---|---|---|
-| How many simultaneous endpoints? | **Design for 8 headsets + the rotary phone (9).** Milestone 1 uses 2 headsets + the rotary. | Number of Bluetooth adapters (see 03-hardware.md). |
+| How many simultaneous endpoints? | **You said: 3 JLab headsets + 1 Cell2Jack (rotary phone) + probably 2 other devices = about 6.** The software is not limited to that; the plan sizes hardware for 6 and leaves room to grow. Milestone 1 uses 2 headsets + the rotary. | Number of Bluetooth adapters (see 03-hardware.md). |
 | Exact JLab model/generation? | **Given: JLab GO Work (Bluetooth).** Button behaviour is measured in T5, not assumed. | Which button signals exist. Nothing structural. |
 | What hardware do you already own? | **Raspberry Pi 3Bs and mini PCs (your words; models unknown).** Prototype on a mini PC; use a Pi 3B only as a spare or an extra data point (its onboard Bluetooth cannot carry voice and its Wi-Fi is 2.4 GHz only). | Whether the first test needs a purchase: probably only USB Bluetooth adapters (and a 5 GHz Wi-Fi adapter for the hotspot). |
 | Budget | **No hard cap; minimise risk, not cost.** | — |
@@ -73,7 +73,7 @@ asked me not to. What I can do, and did:
 
 1. **Dial codes:** confirmed by you; the defaults in 07-intercom-behavior.md stand. Longer (2-4 key) codes and any number of groups are supported if you want custom channels (see 07).
 2. **Hardware tests:** nothing has run on real headsets, adapters or the Cell2Jack yet (04-validation-plan.md). The first thing to learn is how many simultaneous headsets one adapter carries.
-3. **How many headsets at the real show?** I still assume 8 plus the rotary phone; the adapter count follows from T2/T3.
+3. **The "2 random others":** which devices they are (any Bluetooth headset with a microphone should work; check each against the compatibility matrix before the show).
 4. **Which computer will run captions**, and is there a quiet-speech accuracy target?
 5. **GitHub:** a `main` branch now exists. To make it the default, open the repository's Settings → Branches and switch the default branch to `main` (it is still the working branch until you do).
 6. **License:** MIT (chosen; see LICENSE). Change it if you prefer another.
