@@ -141,6 +141,74 @@ class GraphBackend(Protocol):
     async def snapshot(self) -> GraphSnapshot: ...
     async def reconcile(self, desired: set[tuple[str, str]], snap: GraphSnapshot | None = None) -> tuple[int, int]: ...
     async def ensure_hfp_profile(self, snap: GraphSnapshot) -> list[str]: ...
+    async def play_cue(self, address: str, wav_path: str) -> None: ...
+    async def start_tap(self, node_name: str, rate: int = 16000): ...
+
+
+class PipeWireCli:
+    """Backend that drives a real PipeWire via its command-line tools."""
+
+    def __init__(self, tap_latency: str = "20ms") -> None:
+        self.tap_latency = tap_latency
+        missing = [t for t in ("pw-dump", "pw-link", "pw-cat", "wpctl") if not shutil.which(t)]
+        if missing:
+            raise RuntimeError(f"missing PipeWire tools: {', '.join(missing)}")
+
+    async def _run(self, *argv: str, timeout: float = 5.0) -> tuple[int, str]:
+        proc = await asyncio.create_subprocess_exec(
+            *argv, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+        )
+        try:
+            out, err = await asyncio.wait_for(proc.communicate(), timeout)
+        except asyncio.TimeoutError:
+            proc.kill()
+            return 124, "timeout"
+        if proc.returncode:
+            log.debug("%s -> %s %s", argv, proc.returncode, err.decode(errors="replace")[:200])
+        return proc.returncode or 0, out.decode(errors="replace")
+
+    async def snapshot(self) -> GraphSnapshot:
+        rc, out = await self._run("pw-dump")
+        if rc:
+            raise RuntimeError("pw-dump failed (is PipeWire running?)")
+        return parse_dump(json.loads(out))
+
+    async def reconcile(self, desired: set[tuple[str, str]], snap: GraphSnapshot | None = None) -> tuple[int, int]:
+        """Make the BT-source -> BT-sink links equal ``desired``. Returns (added, removed).
+
+        Only links between Bluetooth voice nodes are ever touched.
+        """
+        snap = snap or await self.snapshot()
+        have = set(snap.links.values())
+        added = removed = 0
+        for lid, pair in list(snap.links.items()):
+            if pair not in desired:
+                rc, _ = await self._run("pw-link", "-d", str(lid))
+                removed += rc == 0
+        for src, dst in sorted(desired - have):
+            s, k = snap.sources.get(src), snap.sinks.get(dst)
+            if not s or not k or not s.out_ports or not k.in_ports:
+                continue
+            # mono mic -> every earpiece channel (SCO sinks are normally mono)
+            for ip in k.in_ports:
+                rc, _ = await self._run("pw-link", str(s.out_ports[0]), str(ip))
+                added += rc == 0
+        return added, removed
+
+    async def ensure_hfp_profile(self, snap: GraphSnapshot) -> list[str]:
+        """Switch any BT card that is not in an HFP profile into one. Returns addresses switched."""
+        switched = []
+        for addr, card in snap.cards.items():
+            if card.active_profile.startswith("headset-head-unit"):
+                continue
+            name = next((n for n in card.profiles if n.startswith("headset-head-unit")), None)
+            if name is None:
+                continue
+            rc, _ = await self._run("wpctl", "set-profile", str(card.id), str(card.profiles[name]))
+            if rc == 0:
+                switched.append(addr)
+        return switched
+
     async def play_cue(self, address: str, wav_path: str) -> None:
         """Play a short WAV into one endpoint's earpiece only."""
         snap = await self.snapshot()
