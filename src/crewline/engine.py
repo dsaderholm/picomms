@@ -253,7 +253,7 @@ class Engine:
     def _write_cues(self) -> None:
         self._cue_dir.mkdir(parents=True, exist_ok=True)
         for kind in ("mute_on", "mute_off", "allcall_on", "allcall_off", "talk_on", "talk_off",
-                     "denied", "status", "attention_ack", "ring", "mention"):
+                     "denied", "status", "attention_ack", "ring", "mention", "private_on", "private_off"):
             (self._cue_dir / f"{kind}.wav").write_bytes(cues.render_wav(kind))
         for pitch in cues.PITCH_HZ:
             for n in range(1, 6):
@@ -616,14 +616,14 @@ class Engine:
             eps.append({
                 "id": e.id, "name": e.name, "kind": e.kind, "address": e.address,
                 "enabled": e.enabled, "forced_mute": e.forced_mute,
-                "talk_mode": e.talk_mode, "can_allcall": e.can_allcall, "can_select": e.can_select,
+                "talk_mode": e.talk_mode, "can_allcall": e.can_allcall, "can_private": e.can_private, "can_select": e.can_select,
                 "select_scope": e.select_scope, "tone_control": e.tone_control, "captions": e.captions,
                 "listen_allowed": e.listen_allowed, "talk_allowed": e.talk_allowed,
                 "mention_terms": e.mention_terms, "mention_cue": e.mention_cue,
                 "home_listen": e.listen, "home_talk": e.talk, "buttons": e.buttons,
                 "connected": st.connected, "audio_up": st.audio_up,
                 "muted": st.muted, "latched_on": st.latched_on, "ptt_down": st.ptt_down,
-                "allcall": st.allcall, "tone_gate": st.tone_gate,
+                "allcall": st.allcall, "private_to": st.private_to, "tone_gate": st.tone_gate,
                 "listen": sorted(st.listen), "talk": sorted(st.talk),
                 "transmitting": self._transmitting(e.id),
                 "speaking": rt.speaking, "level_db": round(rt.level, 1),
@@ -663,8 +663,8 @@ class Engine:
                          "retain_transcripts": cfg.captions.retain_transcripts,
                          "mention_cooldown_s": cfg.captions.mention_cooldown_s},
             "dtmf": {"prefix": cfg.dtmf.prefix, "commands": cfg.dtmf.commands,
-                     "min_tone_ms": cfg.dtmf.min_tone_ms, "gate_hold_ms": cfg.dtmf.gate_hold_ms,
-                     "allcall_timeout_s": cfg.dtmf.allcall_timeout_s},
+                     "digit_timeout_s": cfg.dtmf.digit_timeout_s, "min_tone_ms": cfg.dtmf.min_tone_ms, "gate_hold_ms": cfg.dtmf.gate_hold_ms,
+                     "allcall_timeout_s": cfg.dtmf.allcall_timeout_s, "private_timeout_s": cfg.dtmf.private_timeout_s},
         }
 
     def _network_summary(self) -> dict:

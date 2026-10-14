@@ -55,7 +55,7 @@ function ButtonsDialog({ person, onClose }) {
   useEffect(() => { if (!info || info.learning_left_s <= 0) return; const t = setInterval(load, 1500); return () => clearInterval(t); }, [info && info.learning_left_s > 0]);
   const seen = (info ? info.observed : []).filter((o) => !o.event.startsWith('raw:'));
   const raw = (info ? info.observed : []).filter((o) => o.event.startsWith('raw:'));
-  const acts = [['mute:toggle', 'Mute / unmute'], ['talk:toggle', 'Latched talk on/off'], ['ptt', 'Push-to-talk (hold)'], ['attention', 'Call Sound'], ['allcall:toggle', 'All-call on/off'], ['status', 'Play status beep'],
+  const acts = [['mute:toggle', 'Mute / unmute'], ['talk:toggle', 'Latched talk on/off'], ['ptt', 'Push-to-talk (hold)'], ['attention', 'Call Sound'], ['allcall:toggle', 'All-call on/off'], ...S.endpoints.filter((x) => x.id !== person.id).map((x) => ['private:' + x.id, 'Private line to ' + x.name]), ['private:off', 'End private line'], ['status', 'Play status beep'],
     ...S.groups.map((g) => ['select:' + g.id, 'Talk to ' + g.name]), ...S.groups.map((g) => ['listen:' + g.id, 'Hear ' + g.name + ' on/off'])];
   const sel = (key, enabled) => html`<select class="select" aria-label=${key} disabled=${!enabled || locked} value=${map[key] || ''} onChange=${(e) => setMap({ ...map, [key]: e.target.value })}>
     <option value="">${enabled ? 'Leave as it is' : 'Not seen yet'}</option>${enabled ? acts.map(([v, t]) => html`<option value=${v}>${t}</option>`) : null}</select>`;
@@ -92,7 +92,7 @@ function PersonEditor({ person, onClose }) {
   const isNew = !person.id;
   const [f, setF] = useState(() => ({
     name: person.name || '', kind: person.kind || 'headset', enabled: person.enabled ?? true, talk_mode: person.talk_mode || 'open', select_scope: person.select_scope || 'talk',
-    can_select: person.can_select ?? true, can_allcall: !!person.can_allcall, forced_mute: !!person.forced_mute, captions: person.captions ?? true, tone_control: !!person.tone_control,
+    can_select: person.can_select ?? true, can_allcall: !!person.can_allcall, can_private: !!person.can_private, forced_mute: !!person.forced_mute, captions: person.captions ?? true, tone_control: !!person.tone_control,
     mention_terms: person.mention_terms || [], mention_cue: person.mention_cue ?? true,
     talk: person.home_talk || [], listen: person.home_listen || [], talk_allowed: person.talk_allowed || [], listen_allowed: person.listen_allowed || [],
   }));
@@ -119,6 +119,7 @@ function PersonEditor({ person, onClose }) {
       <fieldset class="fgroup stack" disabled=${locked}><legend>Groups</legend><${GroupMatrix} groups=${S.groups} f=${f} set=${setF} />
         <div class="form-grid"><${Check} checked=${f.can_select} onChange=${(v) => up('can_select', v)}>Can switch groups themselves<//>
           <${Check} checked=${f.can_allcall} onChange=${(v) => up('can_allcall', v)}>Can make all-calls<//>
+          <${Check} checked=${f.can_private} onChange=${(v) => up('can_private', v)}>Can open private one-to-one lines<//>
           <${Field} id="p-scope" label="Choosing a group changes"><select id="p-scope" class="select" value=${f.select_scope} onChange=${(e) => up('select_scope', e.target.value)}><option value="talk">Who they talk to</option><option value="both">Who they talk to and hear</option></select><//></div></fieldset>
 
       <fieldset class="fgroup stack" disabled=${locked}><legend>Talking</legend>
@@ -148,7 +149,7 @@ export function People() {
       <${Led} kind=${e.audio_up ? 'live' : e.connected ? 'warn' : 'bad'} on=${e.audio_up} />
       <div class="grow"><b>${e.name}</b><div class="xs faint">${e.kind === 'rotary' ? 'Rotary phone' : 'Headset'} · ${modeLabel(e.talk_mode)}${e.address ? '' : ' · no device paired'}${!e.enabled ? ' · disabled' : ''}${e.forced_mute ? ' · muted by admin' : ''}</div></div>
       <div class="cluster" style="gap:4px">${e.home_talk.map((g) => html`<${GroupTag} key=${g} groups=${S.groups} id=${g} mode="talk" />`)}</div>
-      <div class="cluster">${e.can_allcall ? html`<${Pill} icon="megaphone">All-call<//>` : null}${(e.mention_terms || []).length ? html`<${Pill} kind="mention" icon="at-sign">${e.mention_terms.join(', ')}<//>` : null}</div>
+      <div class="cluster">${e.can_allcall ? html`<${Pill} icon="megaphone">All-call<//>` : null}${e.can_private ? html`<${Pill} icon="lock">Private<//>` : null}${(e.mention_terms || []).length ? html`<${Pill} kind="mention" icon="at-sign">${e.mention_terms.join(', ')}<//>` : null}</div>
       <${Button} size="sm" onClick=${() => setEdit(e)} data-testid=${'edit-' + e.id}>${locked ? 'View' : 'Edit'}<//></li>`)}</ul>`
       : html`<div style="padding:var(--sp-5)"><${Empty} icon="users" title="Nobody yet">Pair a headset on the Devices page, or add a person here.<//></div>`}<//>
     ${edit && html`<${PersonEditor} person=${edit} onClose=${() => setEdit(null)} />`}</div>`;

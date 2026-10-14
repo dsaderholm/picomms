@@ -311,3 +311,26 @@ async def test_longer_dial_codes_and_group_pitch_via_ui(site, browser):
     await page.click(tid("dial-save"))
     assert await until(lambda: eng.store.config.dtmf.commands.get("31") == "select:lights")
     assert not errors, errors
+
+
+async def test_private_line_from_the_phone_remote(site, browser):
+    base, eng, pw_, app = site
+    errors = []
+    s = eng.store
+    s.upsert_endpoint({**s.config.endpoint("alex").__dict__, "can_private": True, "talk_mode": "open"})
+    tok = app[AUTH].token_for("alex")
+    rp = await new_page(browser, errors, viewport={"width": 390, "height": 844}, has_touch=True)
+    await rp.goto(f"{base}/r/{tok}")
+    await rp.wait_for_selector(tid("private-sound"))
+    await rp.click(tid("private-sound"))
+    assert await until(lambda: eng.state["alex"].private_to == "sound")
+    assert await until(lambda: {(l[0], l[1]) for l in eng.links_now if l[0] == "AA:BB:CC:00:00:02"} == {("AA:BB:CC:00:00:02", "AA:BB:CC:00:00:01")})
+    await rp.wait_for_selector("[data-testid='headline']:has-text('Private')")
+    dash = await new_page(browser, errors)
+    await dash.goto(base + "/")
+    await dash.wait_for_selector(tid("station-alex"))
+    txt = await dash.inner_text(tid("station-alex"))
+    assert "private line" in txt.lower() and "Sound" not in txt         # the dashboard never says who with
+    await rp.click(tid("private-sound"))
+    assert await until(lambda: eng.state["alex"].private_to is None)
+    assert not errors, errors

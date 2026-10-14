@@ -24,6 +24,13 @@ offers a mapping for a signal it has actually seen from that unit.
 | **Headphones with no microphone** | A2DP only | **Cannot join the voice intercom** | Could become *listen-only* endpoints (A2DP, higher quality, higher latency, no talk) for observers. Not built; possible. |
 | **USB-dongle headsets / wired USB headsets** | UAC audio | n/a | Would appear as PipeWire nodes; routing layer is reusable. Fixed stations could use wired headsets. Not built. |
 
+## B0. Compared with other intercom systems: still not built
+
+* **Program / show-relay feed** into headsets (needs a non-Bluetooth source node in the PipeWire graph and a per-listener level; design it with real PipeWire in hand).
+* **Per-person earpiece volume and a hearing-safety limiter** (the limiter should be a proven PipeWire filter-chain plugin, tested on real headsets; Bluetooth headset volume control is unverified).
+* **Phone/Chromebook as a talk-and-listen endpoint** (browser audio, needs HTTPS for the microphone).
+* **Wired/external audio ports** (venue paging or a mixer), cue lights.
+
 ## B. Features you may be forgetting (my suggestions, roughly by value)
 
 Included already: per-person phone remote with cheat sheet; learn-buttons mode; readiness page; setup assistant; diagnosis by plain
@@ -31,7 +38,7 @@ language; Call Sound alert; name-mention alerts (screen + earpiece); crew announ
 
 1. **Standby/cue announcements** — *(text banner on every dashboard/remote is built; a beep/audio version for headsets is not)* "Standby cue 12" / "Go", independent of voice.
 2. **Show profiles** — one-click "Rehearsal / Show / Load-in" presets that swap groups and permissions (then lock).
-3. **Private line** — dial/tap to speak to exactly one person ("whisper to Alex") with a privilege check.
+3. **Private line** — *built* (permission per person; phone remote, dial code or button).
 4. **Stuck-mic detector** — warn when an open mic has carried continuous noise for minutes (the classic open-mic-mix problem); the activity meter already has the data.
 5. **Earpiece hearing-safety limiter** — a limiter in the PipeWire graph so a shout or feedback cannot hurt a student's ears (students are minors). Proven plugin, no custom DSP.
 6. **Headset inventory and sign-out** — numbered labels, who has which, low-battery list for charging; "find my headset" beep.

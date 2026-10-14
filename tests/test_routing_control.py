@@ -278,3 +278,72 @@ def test_muting_ends_an_allcall_so_it_cannot_resume_on_unmute():
     c.apply(ControlEvent("sound", "mute:off"))
     assert not st["sound"].allcall
     assert ("sound", "bo") not in pairs(compute_links(cfg, st))
+
+
+# ---- private lines -------------------------------------------------------------
+def _private_setup():
+    from crewline.control import Controller
+    from crewline.model import default_config
+    from crewline.routing import compute_links, init_state
+    cfg = default_config()
+    for eid in ("alex", "sam"):
+        cfg.endpoints.append(type(cfg.endpoints[0])(id=eid, name=eid.title(), kind="headset", listen=["tech"], talk=["tech"],
+                                                   listen_allowed=["tech", "stage"], talk_allowed=["tech", "stage"]))
+    cfg.endpoint("alex").can_private = True
+    cfg.validate()
+    st = init_state(cfg)
+    for s in st.values():
+        s.connected = s.audio_up = True
+    now = [100.0]
+    ctl = Controller(lambda: cfg, st, clock=lambda: now[0])
+    return cfg, st, ctl, now, compute_links
+
+
+def test_private_line_reaches_exactly_one_person_and_ends_on_mute_select_or_timeout():
+    from crewline.control import ControlEvent
+    cfg, st, ctl, now, compute_links = _private_setup()
+    out = ctl.apply(ControlEvent("alex", "private:sam"))
+    assert out.accepted and [c.kind for c in out.cues] == ["private_on"]
+    heard_by_alex = {(l.src, l.dst) for l in compute_links(cfg, st) if l.src == "alex"}
+    assert heard_by_alex == {("alex", "sam")}                    # not sound, even though they share a group
+    assert any(l.reason == "private" for l in compute_links(cfg, st))
+    ctl.apply(ControlEvent("alex", "mute:on")); ctl.apply(ControlEvent("alex", "mute:off"))
+    assert st["alex"].private_to is None                        # muting ends it: it cannot silently resume
+    ctl.apply(ControlEvent("alex", "private:sam"))
+    ctl.apply(ControlEvent("alex", "select:stage"))
+    assert st["alex"].private_to is None
+    ctl.apply(ControlEvent("alex", "private:sam"))
+    now[0] += 61
+    assert [(c.endpoint, c.kind) for c in ctl.tick()] == [("alex", "private_off")]
+    assert {l.dst for l in compute_links(cfg, st) if l.src == "alex"} == {"sound"}   # back to normal group routing (Alex now talks to Stage; Sam only hears Tech)
+
+
+def test_private_line_toggle_off_permission_and_all_call_exclusive():
+    from crewline.control import ControlEvent
+    cfg, st, ctl, now, compute_links = _private_setup()
+    assert not ctl.apply(ControlEvent("sam", "private:alex")).accepted          # sam has no permission
+    ctl.apply(ControlEvent("alex", "private:sam"))
+    ctl.apply(ControlEvent("alex", "private:sam"))                              # same again = close
+    assert st["alex"].private_to is None
+    ctl.apply(ControlEvent("alex", "private:sam"))
+    ctl.apply(ControlEvent("alex", "private:off"))
+    assert st["alex"].private_to is None
+    assert not ctl.apply(ControlEvent("alex", "private:alex")).accepted         # not to yourself
+    assert not ctl.apply(ControlEvent("alex", "private:nobody")).accepted
+    cfg.endpoint("alex").can_allcall = True
+    ctl.apply(ControlEvent("alex", "private:sam"))
+    ctl.apply(ControlEvent("alex", "allcall:on"))
+    assert st["alex"].private_to is None and st["alex"].allcall
+
+
+def test_private_line_to_a_missing_person_does_not_silence_the_talker_and_actions_validate():
+    import pytest
+    from crewline.control import ControlEvent
+    from crewline.model import ConfigError, validate_action
+    cfg, st, ctl, now, compute_links = _private_setup()
+    st["alex"].private_to = "ghost"
+    assert any(l.src == "alex" for l in compute_links(cfg, st))                 # falls back to normal routing
+    validate_action("private:sam", set(), {"sam"})
+    validate_action("private:off", set(), {"sam"})
+    with pytest.raises(ConfigError):
+        validate_action("private:ghost", set(), {"sam"})

@@ -32,6 +32,8 @@ class EndpointState:
     talk: set[str] = field(default_factory=set)
     allcall: bool = False            # this endpoint is currently all-calling
     allcall_deadline: float | None = None
+    private_to: str | None = None    # id of the one endpoint this endpoint is whispering to
+    private_deadline: float | None = None
 
 
 @dataclass(frozen=True)
@@ -82,6 +84,11 @@ def compute_links(cfg: Config, state: dict[str, EndpointState]) -> set[Link]:
             dst_state = state.get(dst_id)
             if dst_state is None or not can_receive(dst, dst_state):
                 continue
+            pt = by_id.get(sst.private_to) if sst.private_to else None
+            if pt is not None and pt.enabled and src.can_private:
+                if dst_id == sst.private_to:      # a private line goes to exactly one person
+                    links.add(Link(src_id, dst_id, "private"))
+                continue
             if sst.allcall and src.can_allcall:
                 links.add(Link(src_id, dst_id, "allcall"))
                 continue
@@ -127,6 +134,11 @@ def explain(cfg: Config, state: dict[str, EndpointState], src_id: str, dst_id: s
             return f"{src.name} is in latched-talk mode and is not transmitting"
         if src.talk_mode == "ptt" and not s.ptt_down:
             return f"{src.name} is in push-to-talk mode and is not pressing talk"
+    if s.private_to and src.can_private:
+        if s.private_to == dst_id:
+            return f"{src.name} has a private line open to {dst.name}"
+        other = cfg.endpoint(s.private_to)
+        return f"{src.name} has a private line open to {other.name if other else s.private_to}, so nobody else hears them"
     if s.allcall and src.can_allcall:
         return f"{src.name} is making an all-call; {dst.name} hears it"
     shared = s.talk & d.listen

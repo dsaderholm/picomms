@@ -101,6 +101,8 @@ class Endpoint:
     talk_allowed: list[str] = field(default_factory=list)
 
     can_allcall: bool = False
+    # May this endpoint open a private one-to-one line to another endpoint ("whisper")?
+    can_private: bool = False
     # May this endpoint change its own group selection with its controls?
     can_select: bool = True
     # What does "select group X" change when the endpoint issues it?
@@ -189,6 +191,8 @@ class DtmfSettings:
     # All-call auto-expiry (s). 0 disables expiry.
     allcall_timeout_s: float = 20.0
     allcall_style: str = "latched"
+    # A private line ends by itself after this many seconds (0 = never).
+    private_timeout_s: float = 60.0
 
 
 @dataclass
@@ -267,14 +271,16 @@ class Config:
                 if base not in BUTTON_EVENTS:
                     raise ConfigError(f"{e.id}: unknown button event {ev!r}")
                 if action != "ptt":
-                    validate_action(action, set(gids))
+                    validate_action(action, set(gids), set(eids))
+        if not 0 <= self.dtmf.private_timeout_s <= 3600:
+            raise ConfigError("private_timeout_s must be between 0 and 3600 seconds")
         if not 0.3 <= self.dtmf.digit_timeout_s <= 10:
             raise ConfigError("digit_timeout_s must be between 0.3 and 10 seconds")
         codes = list(self.dtmf.commands)
         for code, action in self.dtmf.commands.items():
             if not 1 <= len(code) <= MAX_CODE_LEN or any(ch not in DTMF_KEYS for ch in code):
                 raise ConfigError(f"invalid dial code {code!r}: use 1-{MAX_CODE_LEN} keys from {DTMF_KEYS}")
-            validate_action(action, set(gids))
+            validate_action(action, set(gids), set(eids))
         for a in codes:
             for b in codes:
                 if a != b and b.startswith(a):
@@ -318,11 +324,13 @@ _SIMPLE_ACTIONS = {
 }
 
 
-def validate_action(action: str, group_ids: set[str]) -> None:
+def validate_action(action: str, group_ids: set[str], endpoint_ids: set[str] | None = None) -> None:
     if action in _SIMPLE_ACTIONS:
         return
     kind, _, arg = action.partition(":")
     if kind in ("select", "listen") and arg in group_ids:
+        return
+    if kind == "private" and (arg == "off" or endpoint_ids is None or arg in endpoint_ids):
         return
     raise ConfigError(f"unknown action {action!r}")
 

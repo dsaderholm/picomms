@@ -69,6 +69,7 @@ function stationState(e) {
   if (e.forced_mute) return { text: 'Muted by an administrator', led: 'warn', online: true };
   if (e.muted) return { text: 'Muted', led: 'warn', online: true };
   if (e.allcall) return { text: 'All-call', led: 'live', online: true };
+  if (e.private) return { text: 'On a private line', led: 'live', online: true };
   if (e.speaking) return { text: 'Speaking', led: 'live', online: true, speaking: true };
   if (e.transmitting) return { text: e.talk_mode === 'open' ? 'Mic open' : 'Talking', led: 'live', online: true };
   return { text: e.talk_mode === 'ptt' ? 'Push-to-talk' : e.talk_mode === 'latched' ? 'Tap to talk' : 'Listening', led: 'live', online: true };

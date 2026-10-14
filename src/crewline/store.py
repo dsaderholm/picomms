@@ -157,6 +157,10 @@ class ConfigStore:
             c.endpoints = [e for e in c.endpoints if e.id != eid]
             if c.attention_target == eid:
                 c.attention_target = ""
+            gone = f"private:{eid}"      # a dial code or button that opened a line to them has nothing to open
+            c.dtmf.commands = {k: v for k, v in c.dtmf.commands.items() if v != gone}
+            for e in c.endpoints:
+                e.buttons = {k: v for k, v in e.buttons.items() if v != gone}
         return self._mutate("endpoints", fn)
 
     def set_dtmf(self, d: dict[str, Any]) -> Config:
@@ -166,7 +170,7 @@ class ConfigStore:
                     raise ConfigError(f"unknown dtmf setting {k}")
                 setattr(c.dtmf, k, v)
             for a in c.dtmf.commands.values():
-                validate_action(a, {g.id for g in c.groups})
+                validate_action(a, {g.id for g in c.groups}, {e.id for e in c.endpoints})
         return self._mutate("dtmf", fn)
 
     def set_captions(self, d: dict[str, Any]) -> Config:

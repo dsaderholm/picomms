@@ -5,11 +5,11 @@ import { PageHead } from '/static/js/admin/parts.js';
 
 const KEYS = [['1', ''], ['2', 'ABC'], ['3', 'DEF'], ['4', 'GHI'], ['5', 'JKL'], ['6', 'MNO'], ['7', 'PQRS'], ['8', 'TUV'], ['9', 'WXYZ'], ['*', ''], ['0', ''], ['#', '']];
 
-export function actionLabel(a, groups) {
+export function actionLabel(a, groups, endpoints = []) {
   if (!a) return 'Nothing';
   const [k, arg] = a.split(':');
   return ({ 'mute:toggle': 'Mute / unmute', 'mute:on': 'Mute', 'mute:off': 'Unmute', 'allcall:toggle': 'All-call on/off', 'allcall:on': 'All-call on', 'allcall:off': 'All-call off',
-    'talk:toggle': 'Latched talk', attention: 'Call Sound', status: 'Status beep' }[a]) || (k === 'select' ? 'Talk to ' + groupName(groups, arg) : k === 'listen' ? 'Hear ' + groupName(groups, arg) : a);
+    'talk:toggle': 'Latched talk', attention: 'Call Sound', status: 'Status beep', 'private:off': 'End private line' }[a]) || (k === 'private' ? 'Private line to ' + (endpoints.find((x) => x.id === arg)?.name || arg) : null) || (k === 'select' ? 'Talk to ' + groupName(groups, arg) : k === 'listen' ? 'Hear ' + groupName(groups, arg) : a);
 }
 
 export function DialCodes() {
@@ -22,13 +22,14 @@ export function DialCodes() {
   const [hold, setHold] = useState(d.gate_hold_ms);
   const [editKey, setEditKey] = useState(null);
   const [dt, setDt] = useState(d.digit_timeout_s ?? 2);
+  const [pt, setPt] = useState(d.private_timeout_s ?? 60);
   const [newCode, setNewCode] = useState('');
   const [newAct, setNewAct] = useState('');
-  const acts = [['', 'Nothing'], ['mute:toggle', 'Mute / unmute'], ['allcall:toggle', 'All-call on/off'], ['attention', 'Call Sound'], ['status', 'Status beep'], ['talk:toggle', 'Latched talk on/off'],
+  const acts = [['', 'Nothing'], ['mute:toggle', 'Mute / unmute'], ['allcall:toggle', 'All-call on/off'], ['attention', 'Call Sound'], ['private:off', 'End private line'], ...S.endpoints.map((e) => ['private:' + e.id, 'Private line to ' + e.name]), ['status', 'Status beep'], ['talk:toggle', 'Latched talk on/off'],
     ...S.groups.map((g) => ['select:' + g.id, 'Talk to ' + g.name]), ...S.groups.map((g) => ['listen:' + g.id, 'Hear ' + g.name + ' on/off'])];
   const sound = S.endpoints.find((e) => e.tone_control);
-  const dirty = JSON.stringify(commands) !== JSON.stringify(d.commands) || prefix !== (d.prefix || '') || +ac !== d.allcall_timeout_s || +minTone !== d.min_tone_ms || +hold !== d.gate_hold_ms || +dt !== (d.digit_timeout_s ?? 2);
-  const save = () => call('/config/dtmf', { commands, prefix: prefix.trim(), allcall_timeout_s: +ac, min_tone_ms: +minTone, gate_hold_ms: +hold, digit_timeout_s: +dt }, 'Dial codes saved');
+  const dirty = JSON.stringify(commands) !== JSON.stringify(d.commands) || prefix !== (d.prefix || '') || +ac !== d.allcall_timeout_s || +minTone !== d.min_tone_ms || +hold !== d.gate_hold_ms || +dt !== (d.digit_timeout_s ?? 2) || +pt !== (d.private_timeout_s ?? 60);
+  const save = () => call('/config/dtmf', { commands, prefix: prefix.trim(), allcall_timeout_s: +ac, min_tone_ms: +minTone, gate_hold_ms: +hold, digit_timeout_s: +dt, private_timeout_s: +pt }, 'Dial codes saved');
   const longCodes = Object.keys(commands).filter((k) => k.length > 1).sort();
   const code = newCode.toUpperCase();
   const codeProblem = !code ? '' : !/^[0-9*#A-D]{2,4}$/.test(code) ? 'Use 2 to 4 keys: 0-9, * # or A-D.'
@@ -39,7 +40,7 @@ export function DialCodes() {
   const tryIt = async (digit) => {
     const a = commands[digit]; if (!a || !sound) return;
     const r = await call('/control', { endpoint: sound.id, action: a, source: 'admin' });
-    if (r.data && r.data.ok) toast(`Sent "${actionLabel(a, S.groups)}" to ${sound.name}`);
+    if (r.data && r.data.ok) toast(`Sent "${actionLabel(a, S.groups, S.endpoints)}" to ${sound.name}`);
   };
   return html`<div class="stack-lg">
     <${PageHead} title="Dial codes" actions=${html`<${Button} variant="primary" onClick=${save} disabled=${locked || !dirty} data-testid="dial-save">Save dial codes<//>`}>What each key on the rotary or desk phone does. Tap a key to change it.<//>
@@ -48,11 +49,11 @@ export function DialCodes() {
     <div class="dial-layout">
       <${Panel} id="keypad" eyebrow="Keypad" title="Keys">
         <div class="keypad" role="group" aria-label="Keypad">${KEYS.map(([k, letters]) => html`<button key=${k} type="button" class=${'key' + (commands[k] ? ' set' : '')} data-testid=${'key-' + k} disabled=${locked} onClick=${() => setEditKey(k)}>
-          <span class="digit">${k}</span>${' '}<span class="what">${actionLabel(commands[k], S.groups)}</span></button>`)}</div><//>
+          <span class="digit">${k}</span>${' '}<span class="what">${actionLabel(commands[k], S.groups, S.endpoints)}</span></button>`)}</div><//>
       <div class="stack">
         <${Panel} id="longcodes" eyebrow="More than 12 actions" title="Longer codes">
           <div class="stack"><p class="muted small">The 12 keys are not a limit. A code can be 2 to 4 keys, for example <span class="kbd">2</span> <span class="kbd">1</span> to talk to a third group. A code cannot start with another code (so if <span class="kbd">2</span> is used, <span class="kbd">21</span> is not allowed).</p>
-            ${longCodes.length ? html`<ul class="rowlist">${longCodes.map((k) => html`<li key=${k} class="person-row"><b class="mono">${k}</b><div class="grow">${actionLabel(commands[k], S.groups)}</div>
+            ${longCodes.length ? html`<ul class="rowlist">${longCodes.map((k) => html`<li key=${k} class="person-row"><b class="mono">${k}</b><div class="grow">${actionLabel(commands[k], S.groups, S.endpoints)}</div>
               <${Button} size="sm" variant="danger" disabled=${locked} onClick=${() => dropCode(k)} aria-label=${'Remove code ' + k}>Remove<//></li>`)}</ul>` : html`<p class="faint small">No longer codes yet.</p>`}
             <div class="cluster"><${Field} id="new-code" label="New code" error=${codeProblem}><input id="new-code" class="input mono" style="max-width:8em" maxlength="4" value=${newCode} onInput=${(e) => setNewCode(e.target.value)} disabled=${locked} data-testid="new-code" /><//>
               <${Field} id="new-act" label="Does this"><select id="new-act" class="select" value=${newAct} onChange=${(e) => setNewAct(e.target.value)} disabled=${locked} data-testid="new-act">${acts.map(([v, t]) => html`<option value=${v}>${v ? t : 'Choose an action'}</option>`)}</select><//>
@@ -60,6 +61,7 @@ export function DialCodes() {
         <${Panel} id="rules" title="Rules">
           <div class="stack"><${Field} id="dt-prefix" label="Required first key (optional)" hint="With a first key such as * every command is two keys, for example * then 1. It makes accidental triggers by speech practically impossible."><input id="dt-prefix" class="input" maxlength="1" value=${prefix} onInput=${(e) => setPrefix(e.target.value)} disabled=${locked} style="max-width:6em" /><//>
             <${Field} id="dt-ac" label="All-call ends by itself after (seconds, 0 = never)"><input id="dt-ac" class="input" type="number" min="0" value=${ac} onInput=${(e) => setAc(e.target.value)} disabled=${locked} style="max-width:10em" /><//>
+            <${Field} id="dt-priv" label="A private line ends by itself after (seconds, 0 = never)"><input id="dt-priv" class="input" type="number" min="0" value=${pt} onInput=${(e) => setPt(e.target.value)} disabled=${locked} style="max-width:10em" /><//>
             <${Field} id="dt-dig" label="Longest pause between the keys of a longer code (seconds)"><input id="dt-dig" class="input" type="number" min="0.3" max="10" step="0.1" value=${dt} onInput=${(e) => setDt(e.target.value)} disabled=${locked} style="max-width:10em" /><//>
             <div class="form-grid"><${Field} id="dt-min" label="Shortest tone that counts (ms)"><input id="dt-min" class="input" type="number" min="20" max="200" value=${minTone} onInput=${(e) => setMinTone(e.target.value)} disabled=${locked} /><//>
               <${Field} id="dt-hold" label="Keep the mic closed after a tone (ms)"><input id="dt-hold" class="input" type="number" min="0" max="1000" value=${hold} onInput=${(e) => setHold(e.target.value)} disabled=${locked} /><//></div></div><//>

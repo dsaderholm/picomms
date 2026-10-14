@@ -125,6 +125,8 @@ class Controller:
             return self._talk_toggle(ep, st)
         if kind == "allcall":
             return self._allcall(cfg, ep, st, arg)
+        if kind == "private":
+            return self._private(cfg, ep, st, arg)
         if action == "attention":
             return self._attention(cfg, ep, ev)
         if action == "status":
@@ -146,9 +148,10 @@ class Controller:
                 st.talk = before[0]
                 return self._deny(ep.id, f"not permitted to listen to {gid}")
             st.listen = {gid}
-        # Selecting a group ends an all-call: the user chose somewhere to talk.
+        # Selecting a group ends an all-call or private line: the user chose somewhere to talk.
         st.allcall = False
         st.allcall_deadline = None
+        st.private_to = st.private_deadline = None
         changed = before != (st.talk, st.listen)
         return Outcome(changed=changed, cues=[Cue(ep.id, "group", gid)])
 
@@ -176,6 +179,7 @@ class Controller:
             # Muting ends an all-call so it cannot silently resume on unmute.
             st.allcall = False
             st.allcall_deadline = None
+            st.private_to = st.private_deadline = None
         return Outcome(changed=changed, cues=[Cue(ep.id, "mute_on" if new else "mute_off")])
 
     def _talk_toggle(self, ep: Endpoint, st: EndpointState) -> Outcome:
@@ -192,9 +196,30 @@ class Controller:
         new = (not st.allcall) if arg == "toggle" else (arg == "on")
         changed = new != st.allcall
         st.allcall = new
+        if new:
+            st.private_to = st.private_deadline = None      # one special mode at a time
         timeout = cfg.dtmf.allcall_timeout_s
         st.allcall_deadline = (self._clock() + timeout) if (new and timeout > 0) else None
         return Outcome(changed=changed, cues=[Cue(ep.id, "allcall_on" if new else "allcall_off")])
+
+    def _private(self, cfg: Config, ep: Endpoint, st: EndpointState, arg: str) -> Outcome:
+        """Open or close a private one-to-one line ("whisper"): only the chosen person hears you."""
+        if not ep.can_private:
+            return self._deny(ep.id, "not permitted to open private lines")
+        if arg == "off" or (arg == st.private_to):
+            changed = st.private_to is not None
+            st.private_to = st.private_deadline = None
+            return Outcome(changed=changed, cues=[Cue(ep.id, "private_off")])
+        target = cfg.endpoint(arg)
+        if target is None or target.id == ep.id or not target.enabled:
+            return self._deny(ep.id, "that person is not available for a private line")
+        if st.muted or ep.forced_mute:
+            return self._deny(ep.id, "cannot open a private line while muted")
+        st.private_to = target.id
+        st.allcall, st.allcall_deadline = False, None
+        timeout = cfg.dtmf.private_timeout_s
+        st.private_deadline = (self._clock() + timeout) if timeout > 0 else None
+        return Outcome(changed=True, cues=[Cue(ep.id, "private_on")])
 
     def _attention(self, cfg: Config, ep: Endpoint, ev: ControlEvent) -> Outcome:
         target = cfg.attention_target
@@ -237,7 +262,7 @@ class Controller:
 
     # -- time-based housekeeping ---------------------------------------------
     def tick(self) -> list[Cue]:
-        """Expire all-calls. Returns cues to play for expired ones."""
+        """Expire all-calls and private lines. Returns cues to play for expired ones."""
         cues: list[Cue] = []
         now = self._clock()
         for eid, st in self.state.items():
@@ -245,6 +270,9 @@ class Controller:
                 st.allcall = False
                 st.allcall_deadline = None
                 cues.append(Cue(eid, "allcall_off"))
+            if st.private_to and st.private_deadline is not None and now >= st.private_deadline:
+                st.private_to = st.private_deadline = None
+                cues.append(Cue(eid, "private_off"))
         # Keep the attention history bounded.
         if len(self.attention) > 200:
             keep = {a.id for a in self.attention if a.active}

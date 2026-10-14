@@ -44,7 +44,7 @@ export function endpointBody(e, over = {}) {
   // Rebuild the config payload for an endpoint from its published state (used by quick edits).
   return {
     id: e.id, name: e.name, kind: e.kind, address: e.address, enabled: e.enabled, listen: e.home_listen, talk: e.home_talk,
-    listen_allowed: e.listen_allowed, talk_allowed: e.talk_allowed, can_allcall: e.can_allcall, can_select: e.can_select,
+    listen_allowed: e.listen_allowed, talk_allowed: e.talk_allowed, can_allcall: e.can_allcall, can_private: !!e.can_private, can_select: e.can_select,
     select_scope: e.select_scope, talk_mode: e.talk_mode, forced_mute: e.forced_mute, tone_control: e.tone_control,
     captions: e.captions, buttons: e.buttons || {}, mention_terms: e.mention_terms || [], mention_cue: e.mention_cue, ...over,
   };

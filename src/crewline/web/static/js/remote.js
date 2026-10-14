@@ -72,7 +72,7 @@ function App() {
   const up = me.enabled && me.connected && me.audio_up;
   const gname = (id) => groupName(S.groups, id);
   const headline = !me.enabled ? 'Disabled' : !me.connected ? 'Headset not connected' : !me.audio_up ? 'Connecting voice…'
-    : me.forced_mute ? 'Muted by admin' : me.muted ? 'You are muted' : me.allcall ? 'All-call' : me.transmitting ? (me.talk_mode === 'open' ? 'Mic open' : 'Talking') : 'Listening';
+    : me.forced_mute ? 'Muted by admin' : me.muted ? 'You are muted' : me.allcall ? 'All-call' : me.private_to ? 'Private line' : me.transmitting ? (me.talk_mode === 'open' ? 'Mic open' : 'Talking') : 'Listening';
   const talkTo = me.talk.map(gname).join(' + ') || 'nobody';
 
   const pttDown = (e) => {
@@ -128,6 +128,13 @@ function App() {
             <${Icon} name=${me.listen.includes(g.id) ? 'check' : 'ear'} />${g.name}<//>`)}</div>
         ${me.can_allcall && html`<${Button} class=${'lg' + (me.allcall ? ' alert-solid' : '')} data-testid="allcall" icon="megaphone" onClick=${() => me.allcall ? act('allcall:off') : setConfirmAll(true)}>${me.allcall ? 'End all-call' : 'All-call: everyone hears you'}<//>`}
       </section>
+
+      ${me.can_private && html`<section class="stack" data-testid="private-section">
+        <h2>Private line</h2>
+        <p class="muted small">${me.private_to ? 'Only that person hears you. Tap them again to end it.' : 'Talk to one person; nobody else hears you. It ends by itself, or when you mute or pick a group.'}</p>
+        <div class="groups-grid">${S.endpoints.filter((o) => o.id !== me.id && o.enabled).map((o) => html`
+          <${Button} key=${o.id} class="group-btn" aria-pressed=${String(me.private_to === o.id)} data-testid=${'private-' + o.id} disabled=${!o.connected && me.private_to !== o.id} onClick=${() => act('private:' + o.id)}>
+            <${Icon} name="lock" />${o.name}<//>`)}</div></section>`}
 
       <section>
         <details><summary><${Icon} name="captions" />Recent captions<${Icon} name="chevron-down" class="chev" /></summary>

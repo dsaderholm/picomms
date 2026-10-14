@@ -10,6 +10,7 @@ Design rules:
 * Mention = two quick soft pings (someone said your name).
 * Distinct *patterns* rather than distinct pitches, so they stay recognisable
   through the narrowband (8 kHz) HFP codec.
+* Private line on = three equal low blips, off = one low tone.
 * Group cue = N beeps (N = Group.cue_beeps) at a low/mid/high pitch (3 x 5 = 15 distinct cues). Mute on = descending pair, mute
   off = ascending pair, all-call on = rising triplet, all-call off = falling
   triplet, denied = low double buzz, talk on/off = single high/low blip.
@@ -57,6 +58,10 @@ def pattern(kind: str, beeps: int = 1, pitch: str = "mid") -> list[float]:
         s = _tone(660, 80) + _gap(20) + _tone(880, 80) + _gap(20) + _tone(1175, 120)
     elif kind == "allcall_off":
         s = _tone(1175, 80) + _gap(20) + _tone(880, 80) + _gap(20) + _tone(660, 120)
+    elif kind == "private_on":      # three equal low blips (the all-call cue is a rising triplet)
+        s = _tone(587, 70) + _gap(45) + _tone(587, 70) + _gap(45) + _tone(587, 70)
+    elif kind == "private_off":
+        s = _tone(587, 130)
     elif kind == "talk_on":
         s = _tone(1320, 70)
     elif kind == "talk_off":

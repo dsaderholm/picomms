@@ -136,14 +136,15 @@ def public_state(st: dict) -> dict:
             "id": e["id"], "name": e["name"], "kind": e["kind"], "enabled": e["enabled"],
             "connected": e["connected"], "audio_up": e["audio_up"], "muted": e["muted"] or e["forced_mute"],
             "forced_mute": e["forced_mute"], "transmitting": e["transmitting"], "speaking": e["speaking"],
-            "allcall": e["allcall"], "talk": e["talk"], "listen": e["listen"], "talk_mode": e["talk_mode"],
+            "allcall": e["allcall"], "private": bool(e.get("private_to")), "talk": e["talk"], "listen": e["listen"], "talk_mode": e["talk_mode"],
             "level_db": e["level_db"],
         } for e in st["endpoints"]],
     }
 
 
-def build_cheatsheet(ep: dict, binfo: dict, groups: list[dict]) -> dict:
+def build_cheatsheet(ep: dict, binfo: dict, groups: list[dict], people: list[dict] | None = None) -> dict:
     gname = {g["id"]: g["name"] for g in groups}
+    pname = {p["id"]: p["name"] for p in people or []}
     observed = {o["event"]: o for o in binfo.get("observed", [])}
     rows = []
     for event, action in binfo.get("mappings", {}).items():
@@ -152,7 +153,8 @@ def build_cheatsheet(ep: dict, binfo: dict, groups: list[dict]) -> dict:
         text = ACTION_LABELS.get(action)
         if text is None and ":" in action:
             kind, _, arg = action.partition(":")
-            text = {"select": f"Talk to {gname.get(arg, arg)}", "listen": f"Listen to {gname.get(arg, arg)} on/off"}.get(kind, action)
+            text = {"select": f"Talk to {gname.get(arg, arg)}", "listen": f"Listen to {gname.get(arg, arg)} on/off",
+                    "private": "End private line" if arg == "off" else f"Private line to {pname.get(arg, arg)}"}.get(kind, action)
         rows.append({"button": label, "does": text or action,
                      "verified": base in observed, "seen": observed.get(base, {}).get("count", 0)})
     hint = binfo.get("profile_hint")
@@ -361,17 +363,19 @@ def make_app(args) -> web.Application:
         _, binfo = await link.call("GET", f"/buttons/{eid}")
         pub = public_state(st)
         mine = {k: me_[k] for k in ("id", "name", "enabled", "connected", "audio_up", "muted", "forced_mute",
-                                    "latched_on", "ptt_down", "allcall", "transmitting", "talk_mode",
-                                    "can_allcall", "can_select", "talk", "listen", "listen_allowed",
+                                    "latched_on", "ptt_down", "allcall", "private_to", "transmitting", "talk_mode",
+                                    "can_allcall", "can_private", "can_select", "talk", "listen", "listen_allowed",
                                     "talk_allowed", "tone_control")}
         mine["dial_codes"] = []
         if me_["tone_control"]:
             cmds = st["dtmf"]["commands"]
             gname = {g["id"]: g["name"] for g in st["groups"]}
+            pname = {p["id"]: p["name"] for p in st["endpoints"]}
             for d, a in sorted(cmds.items()):
                 kind, _, arg = a.partition(":")
                 text = ACTION_LABELS.get(a) or {"select": f"Talk to {gname.get(arg, arg)}",
-                                                "listen": f"Listen to {gname.get(arg, arg)} on/off"}.get(kind, a)
+                                                "listen": f"Listen to {gname.get(arg, arg)} on/off",
+                                                "private": "End private line" if arg == "off" else f"Private line to {pname.get(arg, arg)}"}.get(kind, a)
                 mine["dial_codes"].append({"digit": d, "does": text})
             mine["dial_prefix"] = st["dtmf"]["prefix"]
         return web.json_response({"me": mine, "groups": st["groups"], "endpoints": pub["endpoints"],
@@ -379,7 +383,7 @@ def make_app(args) -> web.Application:
                                   "site_name": st.get("site_name", ""), "attention_target": st["attention_target"],
                                   "show_mode": st["show_mode"],
                                   "simulated": st["simulated"],
-                                  "cheatsheet": build_cheatsheet(me_, binfo if isinstance(binfo, dict) else {}, st["groups"])})
+                                  "cheatsheet": build_cheatsheet(me_, binfo if isinstance(binfo, dict) else {}, st["groups"], st["endpoints"])})
 
     @routes.post("/api/r/{token}/do")
     async def rdo(req):
@@ -390,7 +394,7 @@ def make_app(args) -> web.Application:
         b = await req.json()
         action = str(b.get("action", ""))
         kind, _, arg = action.partition(":")
-        if action not in REMOTE_ACTIONS and kind not in ("select", "listen"):
+        if action not in REMOTE_ACTIONS and kind not in ("select", "listen", "private"):
             return web.json_response({"ok": False, "error": "action not allowed from a remote link"}, status=400)
         status, data = await link.call("POST", "/control", {"endpoint": eid, "action": action, "source": "remote"})
         return web.json_response(data, status=status)

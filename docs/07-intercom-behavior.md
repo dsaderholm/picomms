@@ -54,6 +54,10 @@ You confirmed these defaults, and that the rotary phone's tones reach the applia
 | 8 | Status beep (current group / mute / all-call) | |
 | `#` and `*` | unused | The Cell2Jack may use `#*#` for pairing; avoid until its manual is checked |
 
+### Private lines ("whisper")
+
+A person with the permission *Can open private one-to-one lines* (Admin → People) can pick one other person on their phone remote (or by a dial code / button you map: *Private line to Sam*, *End private line*). While it is open **only that person hears them**; nobody else does, even in a shared group. It ends by itself after a time you set (default 60 s), when they mute, pick a group or start an all-call, and it is refused while muted. They hear a distinct cue (three equal low blips on, one low tone off). Dashboards show only "On a private line", never with whom; the engine's diagnostics ("Why can't X hear Y?") do say so, since only admins see them. Off by default per person. Nobody can use it to hear someone else, only to talk to them.
+
 ### Custom channels and more than 12 actions
 
 * **Two groups is not a limit.** Tech and Stage are only the defaults: add as many groups as you like under Admin → Groups (Lights, Video, Front of house, Band, Wings…).
