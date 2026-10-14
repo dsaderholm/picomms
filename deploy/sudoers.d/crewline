@@ -1,0 +1,2 @@
+# Allow the unprivileged 'crewline' account to run exactly one helper (which validates its own arguments).
+crewline ALL=(root) NOPASSWD: /usr/local/sbin/crewline-netctl passthrough on *, /usr/local/sbin/crewline-netctl passthrough off *

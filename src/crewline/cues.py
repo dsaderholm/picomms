@@ -7,6 +7,7 @@ playback stream to that endpoint's sink node.
 
 Design rules:
 * Short (<~0.5 s) and moderate level so they do not startle or mask speech.
+* Mention = two quick soft pings (someone said your name).
 * Distinct *patterns* rather than distinct pitches, so they stay recognisable
   through the narrowband (8 kHz) HFP codec.
 * Group cue = N beeps (N = Group.cue_beeps). Mute on = descending pair, mute
@@ -59,6 +60,9 @@ def pattern(kind: str, beeps: int = 1) -> list[float]:
         s = _tone(520, 70)
     elif kind == "denied":
         s = _tone(220, 90) + _gap(60) + _tone(220, 90)
+    elif kind == "mention":
+        # two soft, quick pings: noticeable without being alarming (a call is the urgent one)
+        s = _tone(1568, 55, 0.18) + _gap(55) + _tone(1976, 85, 0.18)
     elif kind == "attention_ack":
         s = _tone(988, 60) + _gap(30) + _tone(1319, 120)
     elif kind == "ring":

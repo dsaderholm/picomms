@@ -25,6 +25,8 @@ import re
 from dataclasses import dataclass, field, asdict
 from typing import Any
 
+from .network import NetworkSettings, validate_network
+
 SCHEMA_VERSION = 1
 
 MAC_RE = re.compile(r"^([0-9A-F]{2}:){5}[0-9A-F]{2}$")
@@ -107,6 +109,14 @@ class Endpoint:
     # Should this endpoint's microphone be sent to the caption service?
     captions: bool = True
 
+    # Words that mean "this person is being talked about" (e.g. "DJ"). Short acronyms
+    # are expanded to their spoken forms automatically (see mentions.py). Supplementary
+    # to the explicit "Calling" alert, never a replacement for it.
+    mention_terms: list[str] = field(default_factory=list)
+    # Play a short cue in this endpoint's own earpiece when a term is heard (useful for
+    # people on a handset or rotary phone who are not looking at a screen).
+    mention_cue: bool = True
+
     def validate(self, group_ids: set[str]) -> None:
         if not ID_RE.match(self.id):
             raise ConfigError(f"invalid endpoint id {self.id!r}")
@@ -131,6 +141,8 @@ class Endpoint:
             unknown = set(ids) - group_ids
             if unknown:
                 raise ConfigError(f"{self.id}: {label} references unknown groups {sorted(unknown)}")
+        if len(self.mention_terms) > 8 or any(not t.strip() or len(t) > 40 for t in self.mention_terms):
+            raise ConfigError(f"{self.id}: mention terms must be 1-40 characters, at most 8")
         if not set(self.listen) <= set(self.listen_allowed):
             raise ConfigError(f"{self.id}: default listen groups exceed listen_allowed")
         if not set(self.talk) <= set(self.talk_allowed):
@@ -177,6 +189,8 @@ class CaptionSettings:
     # Retention is OFF unless explicitly enabled. Both flags default False.
     retain_transcripts: bool = False
     retain_audio: bool = False
+    # Minimum seconds between earpiece mention cues for one person (visual alerts are not limited).
+    mention_cooldown_s: float = 8.0
 
 
 @dataclass
@@ -189,6 +203,9 @@ class Config:
     captions: CaptionSettings = field(default_factory=CaptionSettings)
     # Attention target: which endpoint id is "Sound" (the one alerts are for).
     attention_target: str = ""
+    network: NetworkSettings = field(default_factory=NetworkSettings)
+    # Shown on the dashboard and printed join sheet.
+    site_name: str = ""
 
     # --- helpers -----------------------------------------------------------
     def group(self, gid: str) -> Group | None:
@@ -222,6 +239,9 @@ class Config:
             raise ConfigError("duplicate Bluetooth addresses")
         if self.attention_target and self.attention_target not in eids:
             raise ConfigError("attention_target is not a known endpoint")
+        validate_network(self.network)
+        if len(self.site_name) > 60:
+            raise ConfigError("site name is too long")
         if self.captions.retain_audio:
             raise ConfigError("audio retention is not implemented in this version")
         if self.dtmf.allcall_style not in ALLCALL_STYLES:
@@ -255,6 +275,8 @@ class Config:
             dtmf=DtmfSettings(**d.get("dtmf", {})),
             captions=CaptionSettings(**d.get("captions", {})),
             attention_target=d.get("attention_target", ""),
+            network=NetworkSettings(**d.get("network", {})),
+            site_name=d.get("site_name", ""),
         )
         cfg.validate()
         return cfg
@@ -304,6 +326,7 @@ def default_config() -> Config:
                 can_allcall=True,
                 tone_control=True,
                 talk_mode="open",
+                mention_terms=["DJ"],
             )
         ],
         attention_target="sound",

@@ -38,6 +38,8 @@ from .captions.client import CaptionClient
 from .commands import DtmfCommandHandler
 from .control import Controller, ControlEvent, Cue, Outcome
 from .dtmf import DtmfDecoder, DtmfEvent
+from .mentions import MentionBook, find_term
+from .network import NetworkBackend, wifi_qr_payload
 from .model import Config, ConfigError, ConfigLocked
 from .pwgraph import GraphBackend, GraphSnapshot, PipeWireCli
 from .routing import EndpointState, compute_links, explain, init_state
@@ -94,7 +96,8 @@ class Runtime:
 
 
 class Engine:
-    def __init__(self, state_dir: Path, graph: GraphBackend, bt, simulated: bool = False) -> None:
+    def __init__(self, state_dir: Path, graph: GraphBackend, bt, simulated: bool = False,
+                 net: NetworkBackend | None = None) -> None:
         self.state_dir = Path(state_dir)
         self.simulated = simulated
         self.graph = graph
@@ -121,6 +124,10 @@ class Engine:
         self._cue_dir = self.state_dir / "cues"
         self.log_events: deque[dict] = deque(maxlen=200)
         self.at = AtTranslator()
+        self.mentions = MentionBook()
+        self.net = net
+        self.net_status: dict = {"available": False, "reason": "network control not configured"}
+        self._passthrough_applied: tuple[str, bool] | None = None
         self.buttons = ButtonHub(lambda: self.store.config,
                                  lambda c: asyncio.get_running_loop().create_task(self.control(c)))
 
@@ -136,8 +143,45 @@ class Engine:
         self._tasks = [
             asyncio.create_task(self._bt_connect(), name="bluez-connect"),
             asyncio.create_task(self._loop(), name="reconcile"),
+            asyncio.create_task(self._net_loop(), name="network"),
         ]
         self.note("engine started" + (" (SIMULATION)" if self.simulated else ""))
+
+    # -- network (hotspot / internet passthrough) ----------------------------------
+    async def _net_loop(self) -> None:
+        """Poll network status (cheap, separate from the audio reconcile loop)."""
+        while self.net is not None:
+            try:
+                await self.refresh_network()
+                st = self.net_status
+                ap, n = st.get("ap", {}), self.store.config.network
+                # The nftables rule that blocks internet passthrough does not survive a reboot:
+                # re-apply it once the hotspot is up.
+                if st.get("available") and ap.get("active") and ap.get("interface"):
+                    want = (ap["interface"], n.passthrough)
+                    if self._passthrough_applied != want and not n.passthrough:
+                        await self.net.set_passthrough(False, ap["interface"])
+                    self._passthrough_applied = want
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                log.exception("network status failed")
+            await asyncio.sleep(10)
+
+    async def refresh_network(self) -> dict:
+        if self.net is None:
+            return self.net_status
+        old = json.dumps(self.net_status.get("ap"), sort_keys=True, default=str)
+        self.net_status = await self.net.status()
+        if json.dumps(self.net_status.get("ap"), sort_keys=True, default=str) != old:
+            self.bus.publish({"type": "state"})
+        return self.net_status
+
+    def network_info(self) -> dict:
+        n = self.store.config.network
+        qr = wifi_qr_payload(n.ap_ssid, n.ap_password) if n.ap_ssid and n.ap_password else ""
+        return {"status": self.net_status, "settings": n.__dict__, "wifi_qr": qr,
+                "show_mode": self.store.config.show_mode}
 
     async def _bt_connect(self) -> None:
         """Connect to BlueZ, retrying forever: BlueZ may start after us at boot, and a
@@ -208,7 +252,7 @@ class Engine:
     def _write_cues(self) -> None:
         self._cue_dir.mkdir(parents=True, exist_ok=True)
         for kind in ("mute_on", "mute_off", "allcall_on", "allcall_off", "talk_on", "talk_off",
-                     "denied", "status", "attention_ack", "ring"):
+                     "denied", "status", "attention_ack", "ring", "mention"):
             (self._cue_dir / f"{kind}.wav").write_bytes(cues.render_wav(kind))
         for n in range(1, 6):
             (self._cue_dir / f"group-{n}.wav").write_bytes(cues.render_wav("group", n))
@@ -481,13 +525,31 @@ class Engine:
         text = (msg.get("text") or "").strip()
         if not text:
             return
-        terms = [t for t in cfg.captions.highlight_terms if t.strip()]
-        mention = bool(terms) and re.search(
-            r"\b(" + "|".join(re.escape(t) for t in terms) + r")\b", text, re.I) is not None
+        source = msg.get("endpoint") or ""
+        seg = msg.get("seg")
+        # Who was mentioned? Each person can have their own words; the speaker is never
+        # alerted about their own name.
+        hits: list[tuple[str, str]] = []
+        for e in cfg.endpoints:
+            if e.id != source and e.mention_terms:
+                term = find_term(text, e.mention_terms)
+                if term:
+                    hits.append((e.id, term))
+        targets = []
+        for target, term in hits:
+            m = self.mentions.add(target, source, term, text, msg.get("group") or "", seg, time.time())
+            if m is None:
+                continue                      # same utterance already raised this mention
+            targets.append(target)
+            self.bus.publish({"type": "mention", "mention": m.to_dict()})
+            self._mention_cue(target)
+        glob = [t for t in cfg.captions.highlight_terms if t.strip()]
+        highlighted = bool(hits) or (bool(glob) and find_term(text, glob) is not None)
         ev = {
-            "type": "caption", "seg": msg.get("seg"), "endpoint": msg.get("endpoint"),
+            "type": "caption", "seg": seg, "endpoint": source,
             "name": msg.get("name"), "group": msg.get("group"), "text": text,
-            "final": bool(msg.get("final")), "mention": mention, "t": time.time(),
+            "final": bool(msg.get("final")), "mention": highlighted,
+            "mention_targets": [t for t, _ in hits], "t": time.time(),
         }
         # replace the interim line of the same segment, keep a short history
         rc = self.bus.recent_captions
@@ -504,6 +566,32 @@ class Engine:
             with open(d / (time.strftime("%Y-%m-%d") + ".jsonl"), "a") as fh:
                 fh.write(json.dumps(ev) + "\n")
 
+    def _mention_cue(self, target: str, force: bool = False) -> None:
+        """Play the mention cue in that person's own earpiece (rate-limited)."""
+        cfg = self.store.config
+        ep = cfg.endpoint(target)
+        if not ep or not ep.mention_cue or not self.state.get(target) or not self.state[target].audio_up:
+            return
+        if force or self.mentions.cue_allowed(target, time.monotonic(), cfg.captions.mention_cooldown_s):
+            asyncio.get_running_loop().create_task(self.play([Cue(target, "mention")]))
+
+    def test_mention(self, target: str) -> bool:
+        """Admin test: raise a visible, clearly-labelled test mention and play the cue."""
+        ep = self.store.config.endpoint(target)
+        if not ep:
+            return False
+        term = ep.mention_terms[0] if ep.mention_terms else ep.name
+        m = self.mentions.add(target, "", term, f"(test) {term} was mentioned", "", None, time.time(), test=True)
+        self.bus.publish({"type": "mention", "mention": m.to_dict()})
+        self._mention_cue(target, force=True)
+        return True
+
+    def ack_mentions(self, mid: int | None) -> int:
+        n = self.mentions.ack(mid, time.time())
+        if n:
+            self.bus.publish({"type": "mention_ack"})
+        return n
+
     # -- published state ----------------------------------------------------------------
     def snapshot_state(self) -> dict:
         cfg = self.store.config
@@ -518,6 +606,7 @@ class Engine:
                 "talk_mode": e.talk_mode, "can_allcall": e.can_allcall, "can_select": e.can_select,
                 "select_scope": e.select_scope, "tone_control": e.tone_control, "captions": e.captions,
                 "listen_allowed": e.listen_allowed, "talk_allowed": e.talk_allowed,
+                "mention_terms": e.mention_terms, "mention_cue": e.mention_cue,
                 "home_listen": e.listen, "home_talk": e.talk, "buttons": e.buttons,
                 "connected": st.connected, "audio_up": st.audio_up,
                 "muted": st.muted, "latched_on": st.latched_on, "ptt_down": st.ptt_down,
@@ -553,12 +642,23 @@ class Engine:
             "pairing_open_s": max(0, int(self.bt.pairing_open_until - time.monotonic())),
             "attention": [a.to_dict() for a in self.controller.attention[-20:]],
             "attention_target": cfg.attention_target,
+            "network": self._network_summary(),
+            "mentions": [m.to_dict() for m in self.mentions.active(time.time())],
             "captions": {**self.captions.health(), "server_cfg": cfg.captions.server, "highlight_terms": cfg.captions.highlight_terms,
-                         "retain_transcripts": cfg.captions.retain_transcripts},
+                         "retain_transcripts": cfg.captions.retain_transcripts,
+                         "mention_cooldown_s": cfg.captions.mention_cooldown_s},
             "dtmf": {"prefix": cfg.dtmf.prefix, "commands": cfg.dtmf.commands,
                      "min_tone_ms": cfg.dtmf.min_tone_ms, "gate_hold_ms": cfg.dtmf.gate_hold_ms,
                      "allcall_timeout_s": cfg.dtmf.allcall_timeout_s},
         }
+
+    def _network_summary(self) -> dict:
+        st, n = self.net_status, self.store.config.network
+        ap = st.get("ap", {}) if st.get("available") else {}
+        return {"available": bool(st.get("available")), "ap_active": bool(ap.get("active")),
+                "ap_ssid": n.ap_ssid if ap.get("active") else "", "clients": ap.get("clients"),
+                "internet_ok": (st.get("internet") or {}).get("ok"),
+                "band": n.ap_band if ap.get("active") else ""}
 
     def _publish_if_changed(self) -> None:
         # Level meters change constantly; compare without them to cut chatter.
@@ -702,7 +802,9 @@ async def run(args) -> None:
     else:
         graph = PipeWireCli()
         bt = BluezDbus(lambda: {e.address for e in eng.store.config.endpoints if e.address})
-    eng = Engine(Path(args.state_dir), graph, bt, simulated=args.sim)
+    from .network import NmcliBackend, SimNetwork
+    eng = Engine(Path(args.state_dir), graph, bt, simulated=args.sim,
+                 net=SimNetwork() if args.sim else NmcliBackend())
     await eng.start()
     if args.sim:
         from .sim_demo import run_demo

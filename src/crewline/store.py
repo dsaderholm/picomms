@@ -177,6 +177,17 @@ class ConfigStore:
                 setattr(c.captions, k, v)
         return self._mutate("captions", fn)
 
+    def set_network(self, d: dict[str, Any]) -> Config:
+        def fn(c: Config) -> None:
+            for k, v in d.items():
+                if not hasattr(c.network, k):
+                    raise ConfigError(f"unknown network setting {k}")
+                setattr(c.network, k, v)
+        return self._mutate("network", fn)
+
+    def set_site_name(self, name: str) -> Config:
+        return self._mutate("site", lambda c: setattr(c, "site_name", name.strip()))
+
     def set_attention_target(self, eid: str) -> Config:
         return self._mutate("attention", lambda c: setattr(c, "attention_target", eid))
 

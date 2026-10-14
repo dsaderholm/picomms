@@ -116,6 +116,7 @@ def public_state(st: dict) -> dict:
         "groups": st["groups"],
         "attention_target": st["attention_target"],
         "attention": [a for a in st["attention"] if a["active"]],
+        "mentions": st.get("mentions", []),
         "captions": {k: st["captions"].get(k) for k in ("enabled", "connected")},
         "endpoints": [{
             "id": e["id"], "name": e["name"], "kind": e["kind"], "enabled": e["enabled"],
@@ -301,7 +302,8 @@ def make_app(args) -> web.Application:
 
     def viewer_event(ev: dict):
         t = ev.get("type")
-        if t in ("state", "attention", "attention_ack", "config", "engine", "caption", "speaking"):
+        if t in ("state", "attention", "attention_ack", "config", "engine", "caption", "speaking",
+                 "mention", "mention_ack"):
             return ev
         return None            # button/log events are admin-only
 
@@ -309,6 +311,12 @@ def make_app(args) -> web.Application:
     async def pevents(req):
         need_viewer(req)
         return await sse(req, viewer_event)
+
+    @routes.post("/api/public/mention/ack")
+    async def mack(req):
+        need_viewer(req)
+        status, data = await link.call("POST", "/mention/ack", await req.json())
+        return web.json_response(data, status=status)
 
     @routes.post("/api/public/attention/ack")
     async def pack(req):
@@ -413,6 +421,14 @@ def make_app(args) -> web.Application:
     async def awhy(req):
         return await proxy(req, "GET", f"/why?src={quote(req.query['src'], safe='')}&dst={quote(req.query['dst'], safe='')}")
 
+    @routes.get("/api/admin/network")
+    async def anetwork(req):
+        return await proxy(req, "GET", "/network")
+
+    @routes.get("/api/admin/network/scan")
+    async def anetscan(req):
+        return await proxy(req, "GET", f"/network/scan?iface={quote(req.query.get('iface', ''), safe='')}")
+
     @routes.get("/api/admin/log")
     async def alog(req):
         return await proxy(req, "GET", "/log")
@@ -429,10 +445,14 @@ def make_app(args) -> web.Application:
                             content_type="application/json", status=status,
                             headers={"Content-Disposition": f'attachment; filename="crewline-config-{time.strftime("%Y%m%d-%H%M")}.json"'})
 
+    @routes.post("/api/admin/network/ap/{op}")
+    async def anetap(req):
+        return await proxy(req, "POST", f"/network/ap/{req.match_info['op']}")
+
     @routes.post("/api/admin/{area}/{op}")
     async def apost(req):
         area, op = req.match_info["area"], req.match_info["op"]
-        if area not in ("config", "bt", "test", "buttons", "control", "attention"):
+        if area not in ("config", "bt", "test", "buttons", "control", "attention", "mention", "network"):
             raise web.HTTPNotFound()
         return await proxy(req, "POST", f"/{area}/{op}")
 
@@ -445,6 +465,28 @@ def make_app(args) -> web.Application:
         need_admin(req)
         b = await req.json()
         return web.json_response({"ok": True, "token": auth.rotate_token(b["endpoint"])})
+
+    def qr_svg(data: str, scale: int = 6) -> web.Response:
+        try:
+            import segno
+        except ImportError:
+            raise web.HTTPNotFound(text="QR support not installed (pip install segno)")
+        buf = io.BytesIO()
+        segno.make(data, error="m").save(buf, kind="svg", scale=scale, border=2, xmldecl=False, svgns=True)
+        return web.Response(body=buf.getvalue(), content_type="image/svg+xml")
+
+    @routes.get("/api/admin/qr.svg")
+    async def qr_any(req):
+        need_admin(req)
+        data = req.query.get("data", "")
+        if not data or len(data) > 300:
+            raise web.HTTPBadRequest(text="data required (max 300 characters)")
+        return qr_svg(data)
+
+    @routes.get("/api/public/qr/dashboard.svg")
+    async def qr_dash(req):
+        need_viewer(req)
+        return qr_svg(f"http://{req.headers.get('Host', '')}/")
 
     @routes.get("/api/admin/qr/{token}.svg")
     async def qr(req):

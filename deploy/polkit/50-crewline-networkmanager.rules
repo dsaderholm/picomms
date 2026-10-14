@@ -1,0 +1,6 @@
+// Let the 'crewline' service account manage NetworkManager (hotspot and uplink Wi-Fi) without a desktop session.
+polkit.addRule(function(action, subject) {
+    if (action.id.indexOf("org.freedesktop.NetworkManager.") == 0 && subject.user == "crewline") {
+        return polkit.Result.YES;
+    }
+});

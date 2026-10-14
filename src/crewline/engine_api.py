@@ -16,6 +16,7 @@ from aiohttp import web
 
 from .control import ControlEvent
 from .model import ConfigError, ConfigLocked, normalize_mac
+from .network import default_ssid, new_passphrase
 
 
 def _json(data, status: int = 200) -> web.Response:
@@ -119,6 +120,7 @@ def make_app(eng) -> web.Application:
             "dtmf": lambda: s.set_dtmf(b),
             "captions": lambda: s.set_captions(b),
             "attention_target": lambda: s.set_attention_target(b["id"]),
+            "site_name": lambda: s.set_site_name(b["name"]),
             "restore": lambda: s.restore_json(b["json"]),
         }
         if op not in ops:
@@ -130,6 +132,94 @@ def make_app(eng) -> web.Application:
     @r.get("/config/export")
     async def export(req):
         return web.Response(text=eng.store.export_json(), content_type="application/json")
+
+    @r.post("/mention/ack")
+    async def mention_ack(req):
+        b = await body(req)
+        return _json({"ok": True, "acked": eng.ack_mentions(b.get("id"))})
+
+    @r.post("/test/mention/{id}")
+    async def test_mention(req):
+        return _json({"ok": eng.test_mention(req.match_info["id"])})
+
+    # ---- network (hotspot, uplink, passthrough) ---------------------------------------
+    def need_unlocked():
+        if eng.store.config.show_mode:
+            raise ConfigLocked("Show mode is on: network changes are locked (they would disconnect every phone). "
+                               "Turn show mode off first.")
+
+    def need_net():
+        if eng.net is None:
+            raise ValueError("network control is not configured on this appliance")
+
+    @r.get("/network")
+    async def net_info(req):
+        await eng.refresh_network()
+        return _json(eng.network_info())
+
+    @r.post("/network/suggest")
+    async def net_suggest(req):
+        return _json({"ssid": default_ssid(), "password": new_passphrase()})
+
+    @r.post("/network/settings")
+    async def net_settings(req):
+        need_unlocked()
+        eng.store.set_network(await body(req))
+        eng.note("config: network settings")
+        return _json({"ok": True})
+
+    @r.post("/network/ap/start")
+    async def net_ap_start(req):
+        need_unlocked(); need_net()
+        n = eng.store.config.network
+        if not n.ap_ssid or not n.ap_password:
+            raise ValueError("set a hotspot name and password first")
+        eng.store.set_network({"ap_enabled": True})
+        msg = await eng.net.apply_ap(eng.store.config.network)
+        eng.note(f"hotspot: {msg}")
+        await eng.refresh_network()
+        return _json({"ok": msg == "hotspot started", "message": msg})
+
+    @r.post("/network/ap/stop")
+    async def net_ap_stop(req):
+        need_unlocked(); need_net()
+        eng.store.set_network({"ap_enabled": False})
+        msg = await eng.net.stop_ap()
+        eng.note(f"hotspot: {msg}")
+        await eng.refresh_network()
+        return _json({"ok": True, "message": msg})
+
+    @r.get("/network/scan")
+    async def net_scan(req):
+        need_net()
+        return _json(await eng.net.scan(req.query.get("iface", "")))
+
+    @r.post("/network/join")
+    async def net_join(req):
+        need_unlocked(); need_net()
+        b = await body(req)
+        msg = await eng.net.join(b["iface"], b["ssid"], b.get("password", ""))
+        eng.note(f"uplink Wi-Fi {b['ssid']}: {msg}")
+        await eng.refresh_network()
+        return _json({"ok": msg == "connected", "message": msg})
+
+    @r.post("/network/forget")
+    async def net_forget(req):
+        need_unlocked(); need_net()
+        msg = await eng.net.forget((await body(req))["name"])
+        await eng.refresh_network()
+        return _json({"ok": True, "message": msg})
+
+    @r.post("/network/passthrough")
+    async def net_passthrough(req):
+        need_unlocked(); need_net()
+        on = bool((await body(req))["on"])
+        eng.store.set_network({"passthrough": on})
+        iface = (eng.net_status.get("ap") or {}).get("interface") or eng.store.config.network.ap_interface
+        msg = await eng.net.set_passthrough(on, iface) if iface else "saved; applies when the hotspot starts"
+        eng.note(f"internet passthrough {'on' if on else 'off'}: {msg}")
+        eng._passthrough_applied = (iface, on)
+        return _json({"ok": True, "message": msg})
 
     # ---- buttons -----------------------------------------------------------------
     @r.post("/button")
