@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "picomms"
+version = "0.1.0"
+description = "Local Bluetooth intercom appliance for stage/tech crews (prototype)"
+requires-python = ">=3.11"
+dependencies = [
+    "aiohttp>=3.9",
+    "dbus-fast>=2.0",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+captions = ["faster-whisper>=1.0"]
+
+[project.scripts]
+picomms-engine = "picomms.engine:main"
+picomms-web = "picomms.web.app:main"
+picomms-caption-server = "picomms.captions.server:main"
+picomms-probe = "picomms.tools.probe:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"picomms.web" = ["static/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
