@@ -42,7 +42,7 @@ browsers ◄── crewline-web ◄── unix socket ◄── crewline-engine 
 ```
 python3 -m venv .venv && . .venv/bin/activate
 pip install -e '.[test]' pytest-asyncio pytest-timeout segno
-pytest                                  # 100 tests
+pytest                                  # 108 tests (7 drive a headless browser)
 # full simulated system with fake headsets + the web UI:
 crewline-engine --sim --state-dir /tmp/cl --socket /tmp/cl/engine.sock &
 crewline-web --listen 127.0.0.1:8080 --socket /tmp/cl/engine.sock --state-dir /tmp/cl --config /dev/null &
@@ -57,7 +57,7 @@ Simulation mode is labelled with a banner on every page and is never evidence ab
 src/crewline/      engine, routing, control, dtmf, cues, bluez, pwgraph, captions/, web/, tools/
 deploy/            installer, systemd units, WirePlumber + BlueZ config, backup/restore
 tools/             asr_bench.py (caption benchmark), pw_mix_selftest.py (T3)
-tests/             100 automated tests (logic, security, simulation)
+tests/             108 automated tests (logic, security, simulation, headless-browser UI flows)
 docs/              the design, research, hardware, validation plan
 ```
 

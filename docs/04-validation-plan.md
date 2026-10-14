@@ -161,4 +161,4 @@ Copy this table into `docs/results/<date>-<test>.md` for each run, with raw outp
 
 ### Results so far
 
-*Nothing from hardware yet.* Software-only results that exist today: 100 automated tests (all passing in the build sandbox), the DTMF talk-off check on one speech clip (zero false digits across 18 speed/gain variants), and the caption benchmark in 10-caption-benchmarks.md.
+*Nothing from hardware yet.* Software-only results that exist today: 108 automated tests (all passing in the build sandbox), the DTMF talk-off check on one speech clip (zero false digits across 18 speed/gain variants), and the caption benchmark in 10-caption-benchmarks.md.

@@ -13,7 +13,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest>=8"]
+test = ["pytest>=8", "pytest-asyncio", "pytest-timeout", "segno", "numpy"]
+qr = ["segno"]
 captions = ["faster-whisper>=1.0"]
 
 [project.scripts]

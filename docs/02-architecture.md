@@ -120,7 +120,7 @@ Measurement method: 04-validation-plan.md T10 and `crewline-probe click-train / 
 There is **no voice gate, noise suppressor or automatic gain** anywhere in the live
 path. The only detectors (`activity.py`) look at a *copy* of the audio to drive the
 "speaking" indicator and to cut caption segments; they use a pre-roll buffer so onsets
-are not clipped and a thresholds that scale to the measured noise floor (test:
+are not clipped and thresholds that scale to the measured noise floor (test:
 a whisper-level signal is detected). Optional, off by default, per endpoint: a gentle
 downward *expander* (not a gate) for headsets that have no mute button — see
 09-ideas.md for the reasoning and the proposed implementation (LSP expander in a

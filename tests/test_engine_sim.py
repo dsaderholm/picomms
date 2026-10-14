@@ -190,3 +190,24 @@ async def test_cell2jack_digits_seen_as_at_commands_also_run_commands(rig):
     assert await wait_for(lambda: eng.state["sound"].talk == {"stage"})
     eng.on_at(SOUND, "ATD1;")
     assert await wait_for(lambda: eng.state["sound"].talk == {"tech"})
+
+
+async def test_engine_survives_bluez_not_ready(tmp_path):
+    """BlueZ starting after the engine must not crash it; links/readiness reflect it."""
+    from crewline.bluez import SimBluetooth
+
+    class LateBt(SimBluetooth):
+        calls = 0
+
+        async def start(self):
+            LateBt.calls += 1
+            if LateBt.calls < 2:
+                raise RuntimeError("org.bluez not on the bus yet")
+
+    g = SimGraph()
+    eng = Engine(tmp_path, g, LateBt(g), simulated=True)
+    await eng.start()
+    assert not eng.bt_ok
+    assert any(c["name"] == "BlueZ" and c["level"] == "fail" for c in eng.readiness())
+    assert await wait_for(lambda: eng.bt_ok, 5)
+    await eng.stop()

@@ -22,7 +22,7 @@ apt-get update
 DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
   pipewire pipewire-bin pipewire-audio wireplumber libspa-0.2-bluetooth \
   bluez python3 python3-venv python3-pip usbutils rfkill chrony ca-certificates \
-  libsndfile1 pulseaudio-utils
+  libsndfile1 pulseaudio-utils avahi-daemon
 
 wp_ver=$(wireplumber --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+' | head -1 || echo "0.0")
 echo "WirePlumber ${wp_ver}; PipeWire $(pipewire --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)"
@@ -81,8 +81,8 @@ systemctl daemon-reload
 systemctl restart bluetooth.service
 uid=$(id -u crewline)
 systemctl start "user@${uid}.service"
-runuser -u crewline -- env XDG_RUNTIME_DIR="/run/user/${uid}" systemctl --user daemon-reload
-runuser -u crewline -- env XDG_RUNTIME_DIR="/run/user/${uid}" systemctl --user restart pipewire.service wireplumber.service crewline-engine.service crewline-web.service || \
+runuser -u crewline -- env XDG_RUNTIME_DIR="/run/user/${uid}" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${uid}/bus" systemctl --user daemon-reload
+runuser -u crewline -- env XDG_RUNTIME_DIR="/run/user/${uid}" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${uid}/bus" systemctl --user restart pipewire.service wireplumber.service crewline-engine.service crewline-web.service || \
   echo "NOTE: user services did not start yet; reboot once and check 'journalctl' (see docs/06-operations.md)"
 
 install -m 0755 "$SRC/deploy/crewline-backup.sh" /usr/local/sbin/crewline-backup

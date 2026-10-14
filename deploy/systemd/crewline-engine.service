@@ -17,7 +17,6 @@ RestartSec=1
 StartLimitIntervalSec=0
 RuntimeDirectory=crewline
 RuntimeDirectoryMode=0700
-Nice=-5
 
 [Install]
 WantedBy=default.target

@@ -54,7 +54,7 @@ declaring show readiness; neither has happened (T12). Until then:
 
 ## Things in the code that were verified by *experiment* in the sandbox
 
-* 100 automated tests pass (`pytest`).
+* 108 automated tests pass (`pytest`), including 7 headless-Chromium tests that click through the real pages.
 * DTMF decoder: all 16 keys, twist limits, noise, harmonics; zero false digits on the JFK clip at 18 speed/gain variants, ~0.5–1% of a
   CPU core to decode a 16 kHz stream in pure Python.
 * ActivityMeter detects a whisper-level signal (−42 dBFS) over a −64 dBFS noise floor in the unit test.

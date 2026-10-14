@@ -248,13 +248,20 @@ def make_app(args) -> web.Application:
                                   "viewer_mode": cfg["viewer_mode"], "engine_ok": link.ok})
 
     # ---- public (dashboard) ----------------------------------------------------------
+    cache = {"t": 0.0, "data": None}
+
     @routes.get("/api/public/state")
     async def pstate(req):
         need_viewer(req)
+        now = time.monotonic()
+        if cache["data"] is not None and now - cache["t"] < 0.15:
+            return web.json_response(cache["data"])      # many dashboards, one engine query
         status, st = await link.call("GET", "/state")
         if status != 200:
+            cache["data"] = None
             return web.json_response({"engine_offline": True}, status=503)
-        return web.json_response(public_state(st))
+        cache["t"], cache["data"] = now, public_state(st)
+        return web.json_response(cache["data"])
 
     @routes.get("/api/public/captions")
     async def pcaps(req):

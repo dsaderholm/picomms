@@ -109,6 +109,7 @@ class Engine:
         self.snap = GraphSnapshot()
         self.links_now: set[tuple[str, str]] = set()
         self.pw_ok = False
+        self.bt_ok = False
         self._kick = asyncio.Event()
         self._tasks: list[asyncio.Task] = []
         self._last_published = ""
@@ -130,12 +131,31 @@ class Engine:
         self.state = init_state(cfg)
         self.controller = Controller(lambda: self.store.config, self.state)
         self._write_cues()
-        await self.bt.start()
         self._on_config(cfg)
         self._tasks = [
+            asyncio.create_task(self._bt_connect(), name="bluez-connect"),
             asyncio.create_task(self._loop(), name="reconcile"),
         ]
         self.note("engine started" + (" (SIMULATION)" if self.simulated else ""))
+
+    async def _bt_connect(self) -> None:
+        """Connect to BlueZ, retrying forever: BlueZ may start after us at boot, and a
+        missing BlueZ must never crash-loop the engine (links keep working)."""
+        delay = 1.0
+        while True:
+            try:
+                await self.bt.start()
+                self.bt_ok = True
+                self.note("connected to BlueZ")
+                self.kick()
+                return
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
+                self.bt_ok = False
+                log.warning("BlueZ not available yet (%s); retrying", exc)
+                await asyncio.sleep(delay)
+                delay = min(delay * 2, 15.0)
 
     async def stop(self) -> None:
         for t in self._tasks:
@@ -293,7 +313,7 @@ class Engine:
     async def _cycle(self) -> None:
         cfg = self.store.config
         now = time.monotonic()
-        if now - self._last_bt >= BT_REFRESH_S:
+        if self.bt_ok and now - self._last_bt >= BT_REFRESH_S:
             self._last_bt = now
             try:
                 self.adapters, self.devices = await self.bt.refresh()
@@ -603,7 +623,9 @@ class Engine:
         add("ok" if self.pw_ok else "fail", "PipeWire", "audio server reachable" if self.pw_ok else "cannot reach PipeWire")
         if self.simulated:
             add("warn", "Simulation", "running in SIMULATION mode: nothing here is real hardware")
-        if not self.adapters:
+        if not self.bt_ok:
+            add("fail", "BlueZ", "cannot reach the Bluetooth service (bluetoothd) — is it running?")
+        elif not self.adapters:
             add("fail", "Bluetooth adapters", "no Bluetooth adapters found")
         for a in self.adapters:
             if not a.powered:
