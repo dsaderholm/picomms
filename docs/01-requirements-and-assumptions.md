@@ -75,6 +75,6 @@ asked me not to. What I can do, and did:
 2. **Hardware tests:** nothing has run on real headsets, adapters or the Cell2Jack yet (04-validation-plan.md). The first thing to learn is how many simultaneous headsets one adapter carries.
 3. **How many headsets at the real show?** I still assume 8 plus the rotary phone; the adapter count follows from T2/T3.
 4. **Which computer will run captions**, and is there a quiet-speech accuracy target?
-5. **GitHub:** see README ("Publishing"): the repository had no `main`; it is created from the first commit and the work arrives as a pull request.
+5. **GitHub:** a `main` branch now exists. To make it the default, open the repository's Settings → Branches and switch the default branch to `main` (it is still the working branch until you do).
 6. **License:** MIT (chosen; see LICENSE). Change it if you prefer another.
 7. **Name:** Crewline (renamed from PicoMMS/PiComms); the GitHub repository is still called `picomms`.
