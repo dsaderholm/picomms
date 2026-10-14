@@ -124,6 +124,36 @@ def make_app(eng) -> web.Application:
     async def export(req):
         return web.Response(text=eng.store.export_json(), content_type="application/json")
 
+    # ---- buttons -----------------------------------------------------------------
+    @r.post("/button")
+    async def button(req):
+        from .buttons import ButtonEvent
+        b = await body(req)
+        eid = b.get("endpoint")
+        if not eid and b.get("address"):
+            ep = eng.endpoint_for_address(b["address"])
+            eid = ep.id if ep else None
+        if not eid:
+            return _json({"ok": False, "error": "unknown device"}, 404)
+        eng.on_button(ButtonEvent(eid, b["event"], b.get("phase", "tap"), b.get("source", "web"), b.get("raw", "")))
+        return _json({"ok": True})
+
+    @r.post("/button/at")
+    async def button_at(req):
+        b = await body(req)
+        eng.on_at(normalize_mac(b["address"]), b["at"])
+        return _json({"ok": True})
+
+    @r.post("/buttons/learn")
+    async def learn(req):
+        b = await body(req)
+        eng.buttons.start_learning(b["endpoint"], float(b.get("seconds", 30)))
+        return _json({"ok": True})
+
+    @r.get("/buttons/{id}")
+    async def buttons_info(req):
+        return _json(eng.buttons_info(req.match_info["id"]))
+
     # ---- Bluetooth -------------------------------------------------------------
     @r.post("/bt/{op}")
     async def bt(req):

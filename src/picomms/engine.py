@@ -33,10 +33,11 @@ from pathlib import Path
 from . import cues
 from .activity import ActivityMeter, Segmenter
 from .bluez import BtAdapter, BtDevice, BluezDbus, SimBluetooth
+from .buttons import AtTranslator, ButtonEvent, ButtonHub, PROFILES
 from .captions.client import CaptionClient
 from .commands import DtmfCommandHandler
 from .control import Controller, ControlEvent, Cue, Outcome
-from .dtmf import DtmfDecoder
+from .dtmf import DtmfDecoder, DtmfEvent
 from .model import Config, ConfigError, ConfigLocked
 from .pwgraph import GraphBackend, GraphSnapshot, PipeWireCli
 from .routing import EndpointState, compute_links, explain, init_state
@@ -117,6 +118,9 @@ class Engine:
         self.transcript_file: Path | None = None
         self._cue_dir = self.state_dir / "cues"
         self.log_events: deque[dict] = deque(maxlen=200)
+        self.at = AtTranslator()
+        self.buttons = ButtonHub(lambda: self.store.config,
+                                 lambda c: asyncio.get_running_loop().create_task(self.control(c)))
 
     # -- lifecycle -----------------------------------------------------------
     async def start(self) -> None:
@@ -218,6 +222,51 @@ class Engine:
             asyncio.create_task(self.play(out.cues))
         self.bus.publish({"type": "state"})
         return out
+
+    # -- headset buttons / HFP AT commands -----------------------------------------
+    def endpoint_for_address(self, address: str):
+        return self.store.config.endpoint_by_address(address)
+
+    def on_button(self, ev: ButtonEvent) -> None:
+        self.buttons.feed(ev)
+        self.bus.publish({"type": "button", "endpoint": ev.endpoint, "event": ev.event})
+
+    def on_at(self, address: str, at: str) -> None:
+        """An AT command was seen from a headset's HFP channel (via btsniff).
+
+        For tone-control endpoints (the Cell2Jack) AT+VTS / ATD digits are also
+        fed to the command handler: an alternative to in-band DTMF. UNVERIFIED
+        until test T4 shows what the Cell2Jack actually sends."""
+        ep = self.endpoint_for_address(address)
+        if ep is None:
+            return
+        at = at.strip()
+        if ep.tone_control:
+            m = re.match(r"^AT\+VTS=([0-9A-D*#])", at) or re.match(r"^ATD([0-9A-D*#]+);?", at)
+            if m:
+                rt = self.rt.get(ep.id)
+                for ch in m.group(1):
+                    self.note(f"{ep.name}: digit {ch} seen as AT command (not audio)")
+                    if rt and rt.cmd:
+                        res = rt.cmd.handle(DtmfEvent("digit", 0.0, ch))
+                        for c in res.controls or []:
+                            asyncio.get_running_loop().create_task(self.control(c))
+                self.bus.publish({"type": "button", "endpoint": ep.id, "event": f"raw:{at[:20]}"})
+                return
+        for name, raw in self.at.translate(address, at):
+            self.on_button(ButtonEvent(ep.id, name, "tap", "hfp-at", raw))
+
+    def buttons_info(self, eid: str) -> dict:
+        ep = self.store.config.endpoint(eid)
+        prof = None
+        if ep and "jlab" in (ep.name + " " + ep.id).lower():
+            prof = PROFILES["jlab-go-work"]
+        return {
+            "observed": self.buttons.observed_list(eid),
+            "learning_left_s": round(self.buttons.learning_left(eid), 1),
+            "mappings": ep.buttons if ep else {},
+            "profile_hint": prof,
+        }
 
     async def ack_attention(self, att_id: int | None, by: str) -> int:
         n = self.controller.ack_all_attention(by) if att_id is None else int(self.controller.ack_attention(att_id, by))

@@ -228,6 +228,14 @@ class Config:
             raise ConfigError("unknown allcall_style")
         if self.dtmf.prefix and self.dtmf.prefix not in "0123456789*#ABCD":
             raise ConfigError("invalid DTMF prefix")
+        from .buttons import BUTTON_EVENTS, LONG_SUFFIX
+        for e in self.endpoints:
+            for ev, action in e.buttons.items():
+                base = ev.removesuffix(LONG_SUFFIX)
+                if base not in BUTTON_EVENTS:
+                    raise ConfigError(f"{e.id}: unknown button event {ev!r}")
+                if action != "ptt":
+                    validate_action(action, set(gids))
         for digit, action in self.dtmf.commands.items():
             if digit not in "0123456789*#ABCD" or len(digit) != 1:
                 raise ConfigError(f"invalid DTMF digit {digit!r}")

@@ -130,3 +130,14 @@ def test_speech_with_tone_inserted(jfk_pcm):
     mid -= mid % 2
     pcm = jfk_pcm[:mid] + dtmf_pcm("1", 0.1, amp=0.2) + jfk_pcm[mid : mid + 16000]
     assert digits(run(pcm)) == ["1"]
+
+
+def test_diagnostics_hook_reports_rejection_reasons():
+    d = DtmfDecoder()
+    seen = []
+    d.on_frame = seen.append
+    d.feed(dtmf_pcm("1", 0.1, twist_db=-9.0))
+    assert seen and all(f["result"] == "reverse-twist" for f in seen)
+    seen.clear()
+    d.feed(dtmf_pcm("1", 0.1))
+    assert any(f["result"] == "ok" and f["digit"] == "1" for f in seen)

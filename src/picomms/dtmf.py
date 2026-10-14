@@ -93,6 +93,9 @@ class DtmfDecoder:
         self._gate = False
         self._gate_release_at = -1   # frame index at which gate drops
         self._last_tone_frame = -1
+        # Optional diagnostics: called with a dict for every non-silent frame.
+        # Used by `picomms-probe dtmf-scan` to tune thresholds on real audio.
+        self.on_frame = None
 
     @property
     def gate_active(self) -> bool:
@@ -110,26 +113,50 @@ class DtmfDecoder:
         ri = max(range(4), key=pw_r.__getitem__)
         ci = max(range(4), key=pw_c.__getitem__)
         pr, pc = pw_r[ri], pw_c[ci]
-        # Dominance inside each group.
         r2 = max(p for i, p in enumerate(pw_r) if i != ri)
         c2 = max(p for i, p in enumerate(pw_c) if i != ci)
-        if pr < self.dominance * r2 or pc < self.dominance * c2:
+        info = None
+        if self.on_frame is not None:
+            info = {
+                "frame": self._frame_idx, "t": self._t(self._frame_idx),
+                "rms_db": 10 * math.log10(max(1e-12, total / n / 32768.0 ** 2)),
+                "row_hz": ROWS[ri], "col_hz": COLS[ci],
+                "row_dom_db": 10 * math.log10(max(1e-12, pr / max(r2, 1e-12))),
+                "col_dom_db": 10 * math.log10(max(1e-12, pc / max(c2, 1e-12))),
+                "twist_db": 10 * math.log10(max(1e-12, pr) / max(1e-12, pc)),
+                "purity": 2.0 * (pr + pc) / n / max(total, 1e-12), "result": "", "digit": "",
+            }
+
+        def reject(why: str):
+            if info is not None:
+                info["result"] = why
+                self.on_frame(info)
             return None
+
+        # Dominance inside each group.
+        if pr < self.dominance * r2 or pc < self.dominance * c2:
+            return reject("not-dominant")
         # Purity: the two tones must carry most of the frame's energy.
         # A sinusoid of amplitude A over n samples has Goertzel power
         # (A*n/2)^2 and time-domain energy A^2*n/2, i.e. energy = 2*power/n.
         tone_energy = 2.0 * (pr + pc) / n
         if tone_energy < self.purity * total:
-            return None
+            return reject("impure")
         # Twist: normal = row (low group) stronger than column; reverse = the opposite.
-        if pc / pr > self.max_reverse or pr / pc > self.max_normal:
-            return None
+        if pc / pr > self.max_reverse:
+            return reject("reverse-twist")
+        if pr / pc > self.max_normal:
+            return reject("normal-twist")
         # Second-harmonic rejection: pure tones have none; voiced speech does.
         if _goertzel_power(frame, self._coef2[ROWS[ri]]) > self.max_harm * pr:
-            return None
+            return reject("harmonic")
         if _goertzel_power(frame, self._coef2[COLS[ci]]) > self.max_harm * pc:
-            return None
-        return KEYS[ri][ci]
+            return reject("harmonic")
+        d = KEYS[ri][ci]
+        if info is not None:
+            info["result"], info["digit"] = "ok", d
+            self.on_frame(info)
+        return d
 
     # -- streaming interface -------------------------------------------------
     def feed(self, pcm: bytes) -> list[DtmfEvent]:

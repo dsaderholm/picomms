@@ -168,3 +168,25 @@ async def test_engine_survives_caption_server_down(rig):
         g.taps[ALEX].push(pcm[i:i + 640])
     await asyncio.sleep(0.3)
     assert (SOUND, ALEX) in g.links          # audio routing unaffected
+
+
+async def test_buttons_learn_then_map_via_api(rig):
+    eng, g = rig
+    async with TestClient(TestServer(make_app(eng))) as c:
+        await c.post("/buttons/learn", json={"endpoint": "alex", "seconds": 5})
+        await c.post("/button/at", json={"address": ALEX, "at": "AT+BLDN"})
+        info = await (await c.get("/buttons/alex")).json()
+        assert info["observed"][0]["event"] == "redial" and info["learning_left_s"] > 0
+        eng.buttons.learning.clear()
+        ep = eng.store.config.endpoint("alex")
+        eng.store.upsert_endpoint(ep.__dict__ | {"buttons": {"redial": "mute:toggle"}})
+        await c.post("/button/at", json={"address": ALEX, "at": "AT+BLDN"})
+        assert await wait_for(lambda: eng.state["alex"].muted)
+
+
+async def test_cell2jack_digits_seen_as_at_commands_also_run_commands(rig):
+    eng, g = rig
+    eng.on_at(SOUND, "AT+VTS=2")
+    assert await wait_for(lambda: eng.state["sound"].talk == {"stage"})
+    eng.on_at(SOUND, "ATD1;")
+    assert await wait_for(lambda: eng.state["sound"].talk == {"tech"})
