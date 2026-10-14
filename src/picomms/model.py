@@ -222,6 +222,8 @@ class Config:
             raise ConfigError("duplicate Bluetooth addresses")
         if self.attention_target and self.attention_target not in eids:
             raise ConfigError("attention_target is not a known endpoint")
+        if self.captions.retain_audio:
+            raise ConfigError("audio retention is not implemented in this version")
         if self.dtmf.allcall_style not in ALLCALL_STYLES:
             raise ConfigError("unknown allcall_style")
         if self.dtmf.prefix and self.dtmf.prefix not in "0123456789*#ABCD":
