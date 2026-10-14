@@ -63,3 +63,14 @@ asked me not to. What I can do, and did:
 | Battery / hardware-mute only when reliably known | UI shows "unknown"; `tests` assert `battery is None` is never invented |
 | No retention by default | `CaptionSettings`; audio retention is *not implemented* and rejected by validation |
 | Preserve Google Meet fallback | nothing in this project touches the Meet setup; docs/06 recommends keeping Chromebooks charged as fallback |
+
+## Open questions that need your answer (consolidated)
+
+1. **Which JLab GO Work do you have** (original or "Gen 2"; model name/number on the box)?
+2. **Which Cell2Jack model**, and is the rotary phone sending **tones** or **pulses**? (If you still have the Cell2Jack manual, check for reserved key sequences such as `#*#`.)
+3. **Dial codes** (07-intercom-behavior.md): talk-only vs talk+listen; all-call latched vs momentary; prefix key or not; what should happen when the handset goes down?
+4. **How many headsets at the real show** (I assumed 8 + the rotary phone)?
+5. Which computer will run **captions** (and is a quiet-speech accuracy target needed, e.g. "90% of whispered phrases")?
+6. **License** for the GitHub project (MIT / Apache-2.0 / GPL-3.0 …) — I did not choose one.
+7. **GitHub:** the repository was empty, so I could only push my working branch (`claude/happy-dirac-yrwgay`) and could not open a pull request (a PR needs a base branch such as `main`). Choose/create the default branch and open the PR, or tell me to.
+8. Project **name** — I renamed PicoMMS to **Crewline**; say so if you prefer another (it is a one-place rename) — and the GitHub repository is still called `picomms`.

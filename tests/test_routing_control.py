@@ -267,3 +267,14 @@ def test_default_config_is_valid_and_roundtrips():
     cfg = default_config()
     again = Config.from_dict(cfg.to_dict())
     assert again.to_dict() == cfg.to_dict()
+
+
+def test_muting_ends_an_allcall_so_it_cannot_resume_on_unmute():
+    cfg, st, c, _ = ctl()
+    c.apply(ControlEvent("sound", "allcall:on"))
+    assert st["sound"].allcall
+    c.apply(ControlEvent("sound", "mute:on"))
+    assert not st["sound"].allcall
+    c.apply(ControlEvent("sound", "mute:off"))
+    assert not st["sound"].allcall
+    assert ("sound", "bo") not in pairs(compute_links(cfg, st))

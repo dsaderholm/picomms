@@ -114,8 +114,117 @@ def parse_managed_objects(objs: dict[str, dict[str, dict[str, Any]]]) -> tuple[l
     return list(adapters.values()), devices
 
 
+def make_agent(window_open, known_addresses):
+    """Build the BlueZ pairing agent (org.bluez.Agent1).
+
+    It accepts pairing ONLY while the admin's pairing window is open, or for
+    devices already in the configuration (e.g. a known headset re-pairing after
+    a factory reset). Signatures follow BlueZ's agent-api; checked offline by
+    ``tests/test_bluez_agent.py``.
+    """
+    from dbus_fast import DBusError
+    from dbus_fast.service import ServiceInterface, method
+
+    class Agent(ServiceInterface):
+        def __init__(self) -> None:
+            super().__init__("org.bluez.Agent1")
+
+        def _allow(self, device: str) -> None:
+            addr = device.rsplit("dev_", 1)[-1].replace("_", ":").upper()
+            if not (window_open() or addr in known_addresses()):
+                raise DBusError("org.bluez.Error.Rejected", "pairing window is closed")
+
+        @method()
+        def Release(self):
+            pass
+
+        @method()
+        def RequestPinCode(self, device: "o") -> "s":  # noqa: F821
+            self._allow(device)
+            return "0000"             # legacy PIN used by most headsets
+
+        @method()
+        def DisplayPinCode(self, device: "o", pincode: "s"):  # noqa: F821
+            pass
+
+        @method()
+        def RequestPasskey(self, device: "o") -> "u":  # noqa: F821
+            self._allow(device)
+            return 0
+
+        @method()
+        def DisplayPasskey(self, device: "o", passkey: "u", entered: "q"):  # noqa: F821
+            pass
+
+        @method()
+        def RequestConfirmation(self, device: "o", passkey: "u"):  # noqa: F821
+            self._allow(device)
+
+        @method()
+        def RequestAuthorization(self, device: "o"):  # noqa: F821
+            self._allow(device)
+
+        @method()
+        def AuthorizeService(self, device: "o", uuid: "s"):  # noqa: F821
+            self._allow(device)
+
+        @method()
+        def Cancel(self):
+            pass
+
+    return Agent()
+
+
 class BtManager(Protocol):
     async def start(self) -> None: ...
+    async def refresh(self) -> tuple[list[BtAdapter], list[BtDevice]]: ...
+    async def open_pairing(self, adapter: str | None, seconds: int) -> None: ...
+    async def close_pairing(self) -> None: ...
+    @property
+    def pairing_open_until(self) -> float: ...
+    async def pair(self, address: str) -> str: ...
+    async def connect(self, address: str) -> str: ...
+    async def disconnect(self, address: str) -> str: ...
+    async def forget(self, address: str) -> str: ...
+    async def trust(self, address: str, on: bool = True) -> None: ...
+
+
+class BluezDbus:
+    """Real BlueZ manager. Requires ``dbus-fast`` and a running ``bluetoothd``."""
+
+    AGENT_PATH = "/org/crewline/agent"
+
+    def __init__(self, known_addresses: Callable[[], set[str]]) -> None:
+        self._bus = None
+        self._known = known_addresses
+        self._pairing_until = 0.0
+        self._pairing_task: asyncio.Task | None = None
+        self._pair_adapter: str | None = None
+
+    @property
+    def pairing_open_until(self) -> float:
+        return self._pairing_until
+
+    def _window_open(self) -> bool:
+        return time.monotonic() < self._pairing_until
+
+    async def start(self) -> None:
+        from dbus_fast import BusType
+        from dbus_fast.aio import MessageBus
+        self._bus = await MessageBus(bus_type=BusType.SYSTEM).connect()
+        await self._register_agent()
+
+    async def _iface(self, path: str, iface: str):
+        intro = await self._bus.introspect("org.bluez", path)
+        return self._bus.get_proxy_object("org.bluez", path, intro).get_interface(iface)
+
+    async def _register_agent(self) -> None:
+        agent = make_agent(self._window_open, self._known)
+        self._bus.export(self.AGENT_PATH, agent)
+        mgr = await self._iface("/org/bluez", "org.bluez.AgentManager1")
+        await mgr.call_register_agent(self.AGENT_PATH, "NoInputNoOutput")
+        await mgr.call_request_default_agent(self.AGENT_PATH)
+
     async def refresh(self) -> tuple[list[BtAdapter], list[BtDevice]]: ...
     async def open_pairing(self, adapter: str | None, seconds: int) -> None: ...
     async def close_pairing(self) -> None: ...

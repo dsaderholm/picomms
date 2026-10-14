@@ -172,6 +172,10 @@ class Controller:
         new = (not st.muted) if arg == "toggle" else (arg == "on")
         changed = new != st.muted
         st.muted = new
+        if new:
+            # Muting ends an all-call so it cannot silently resume on unmute.
+            st.allcall = False
+            st.allcall_deadline = None
         return Outcome(changed=changed, cues=[Cue(ep.id, "mute_on" if new else "mute_off")])
 
     def _talk_toggle(self, ep: Endpoint, st: EndpointState) -> Outcome:
