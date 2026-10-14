@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Crewline Admin</title>
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/admin.css">
+</head>
+<body>
+<div id="sim" class="banner sim hidden">SIMULATION — nothing on this page comes from real hardware</div>
+<div id="off" class="banner off hidden">Engine offline — intercom audio keeps running; settings cannot be changed until it returns (systemd restarts it automatically)</div>
+<header class="topbar">
+  <span class="brand">Crewline Admin</span>
+  <span id="c-show" class="chip">…</span>
+  <button id="show-toggle" class="small">…</button>
+  <span class="spacer"></span>
+  <a href="/" class="small">Dashboard</a>
+  <button id="logout" class="small hidden">Log out</button>
+</header>
+
+<main class="wrap" id="login-view" style="max-width:420px;padding-top:40px">
+  <div class="panel">
+    <h1>Admin login</h1>
+    <p class="muted small">Only people with the admin password can change settings. Crew do not need to log in.</p>
+    <form id="login-form"><label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password" style="width:100%">
+    <p id="login-err" class="small" style="color:var(--bad)"></p><button class="primary" type="submit">Log in</button></form>
+  </div>
+</main>
+
+<main class="wrap hidden" id="app">
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+  <div id="view"></div>
+</main>
+<dialog id="dlg"><div id="dlg-body"></div></dialog>
+<script src="/static/common.js"></script>
+<script src="/static/admin.js"></script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-"""Scripted activity for ``picomms-engine --sim`` (UI development and demos only)."""
+"""Scripted activity for ``crewline-engine --sim`` (UI development and demos only)."""
 
 from __future__ import annotations
 

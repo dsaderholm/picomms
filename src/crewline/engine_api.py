@@ -2,7 +2,7 @@
 
 The web process is the only intended client. Authentication and authorisation
 for people happen in the web process; this socket is protected by filesystem
-permissions (group ``picomms``).
+permissions (group ``crewline``).
 """
 
 from __future__ import annotations
@@ -72,14 +72,21 @@ def make_app(eng) -> web.Application:
         resp = web.StreamResponse(headers={"Content-Type": "text/event-stream", "Cache-Control": "no-cache"})
         await resp.prepare(req)
         q = eng.bus.subscribe()
+        idle = 0.0
         try:
             await resp.write(b"event: hello\ndata: {}\n\n")
             while True:
+                if req.transport is None or req.transport.is_closing():
+                    break                          # client went away: free the handler promptly
                 try:
-                    ev = await asyncio.wait_for(q.get(), 15)
+                    ev = await asyncio.wait_for(q.get(), 1.0)
+                    idle = 0.0
                     await resp.write(f"data: {json.dumps(ev, default=str)}\n\n".encode())
                 except asyncio.TimeoutError:
-                    await resp.write(b": keepalive\n\n")
+                    idle += 1.0
+                    if idle >= 15:
+                        idle = 0.0
+                        await resp.write(b": keepalive\n\n")
         except (ConnectionResetError, asyncio.CancelledError):
             pass
         finally:
@@ -234,7 +241,7 @@ async def serve_unix(eng, path: str) -> web.AppRunner:
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     if os.path.exists(path):
         os.unlink(path)
-    runner = web.AppRunner(make_app(eng))
+    runner = web.AppRunner(make_app(eng), shutdown_timeout=2.0)
     await runner.setup()
     site = web.UnixSite(runner, path)
     await site.start()

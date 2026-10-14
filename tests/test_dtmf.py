@@ -1,4 +1,4 @@
-from picomms.dtmf import DtmfDecoder
+from crewline.dtmf import DtmfDecoder
 from conftest import (
     DTMF, RATE, dtmf_pcm, mix_pcm, noise_pcm, silence_pcm, tone_pcm,
 )

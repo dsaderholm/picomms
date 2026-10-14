@@ -27,7 +27,7 @@ import shutil
 from dataclasses import dataclass, field
 from typing import Protocol
 
-log = logging.getLogger("picomms.pw")
+log = logging.getLogger("crewline.pw")
 
 _MAC_IN_NAME = re.compile(r"((?:[0-9A-Fa-f]{2}[_:]){5}[0-9A-Fa-f]{2})")
 

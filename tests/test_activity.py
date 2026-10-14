@@ -1,7 +1,7 @@
 import array
 
 from conftest import noise_pcm, silence_pcm, tone_pcm
-from picomms.activity import ActivityMeter, Segmenter
+from crewline.activity import ActivityMeter, Segmenter
 
 
 def run(meter, pcm):

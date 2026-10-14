@@ -16,7 +16,7 @@ from concurrent.futures import ThreadPoolExecutor
 from . import protocol as P
 from .engines import Engine, build_engine
 
-log = logging.getLogger("picomms.captionsrv")
+log = logging.getLogger("crewline.captionsrv")
 
 
 class CaptionServer:
@@ -91,7 +91,7 @@ class CaptionServer:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="PicoMMS caption server")
+    ap = argparse.ArgumentParser(description="Crewline caption server")
     ap.add_argument("--listen", default="0.0.0.0:7070")
     ap.add_argument("--engine", default="echo",
                     help="echo | sherpa-streaming:DIR | sherpa-whisper:DIR[:prefix] | "

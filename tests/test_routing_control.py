@@ -1,10 +1,10 @@
 import pytest
 
-from picomms.control import Controller, ControlEvent
-from picomms.model import (
+from crewline.control import Controller, ControlEvent
+from crewline.model import (
     Config, ConfigError, Endpoint, Group, default_config,
 )
-from picomms.routing import Link, compute_links, explain, init_state
+from crewline.routing import Link, compute_links, explain, init_state
 
 
 def make_cfg():

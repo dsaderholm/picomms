@@ -1,11 +1,11 @@
 import pytest
 
-from picomms.buttons import (
+from crewline.buttons import (
     AtTranslator, ButtonEvent, ButtonHub, attribute_avrcp, parse_btmon,
 )
-from picomms.control import Controller
-from picomms.model import ConfigError, default_config
-from picomms.routing import init_state
+from crewline.control import Controller
+from crewline.model import ConfigError, default_config
+from crewline.routing import init_state
 
 
 class Clock:

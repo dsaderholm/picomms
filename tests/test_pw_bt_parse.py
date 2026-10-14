@@ -1,8 +1,8 @@
 """Parsers fed with synthetic data shaped like PipeWire's pw-dump and BlueZ's
 GetManagedObjects. Key names were checked against PipeWire/BlueZ source and
 docs; real-device output is still to be captured (validation test T1)."""
-from picomms.bluez import HFP_HF_UUID, parse_managed_objects
-from picomms.pwgraph import parse_dump
+from crewline.bluez import HFP_HF_UUID, parse_managed_objects
+from crewline.pwgraph import parse_dump
 
 A, B = "AA:BB:CC:DD:EE:01", "AA:BB:CC:DD:EE:02"
 

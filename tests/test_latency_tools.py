@@ -1,7 +1,7 @@
 import struct
 import wave
 
-from picomms.tools.latency import analyze_stereo, click_train_wav
+from crewline.tools.latency import analyze_stereo, click_train_wav
 
 
 def test_click_train_and_known_delay_are_measured(tmp_path):

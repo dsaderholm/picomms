@@ -1,12 +1,12 @@
-"""picomms-probe: hardware validation helpers (run on the appliance).
+"""crewline-probe: hardware validation helpers (run on the appliance).
 
-  picomms-probe inventory [--json FILE]     versions, USB topology, adapters
-  picomms-probe nodes                       Bluetooth voice nodes PipeWire exposes
-  picomms-probe sco                         voice (SCO/eSCO) links per adapter (hcitool)
-  picomms-probe record ADDR SECS OUT.wav    record an endpoint's microphone (16 kHz mono)
-  picomms-probe dtmf-scan FILE.wav          decode tones in a recording and print diagnostics
-  picomms-probe click-train OUT.wav         write a click train for latency tests
-  picomms-probe latency STEREO.wav          analyse a 2-channel latency recording
+  crewline-probe inventory [--json FILE]     versions, USB topology, adapters
+  crewline-probe nodes                       Bluetooth voice nodes PipeWire exposes
+  crewline-probe sco                         voice (SCO/eSCO) links per adapter (hcitool)
+  crewline-probe record ADDR SECS OUT.wav    record an endpoint's microphone (16 kHz mono)
+  crewline-probe dtmf-scan FILE.wav          decode tones in a recording and print diagnostics
+  crewline-probe click-train OUT.wav         write a click train for latency tests
+  crewline-probe latency STEREO.wav          analyse a 2-channel latency recording
 
 Nothing here changes the running system.
 """
@@ -91,7 +91,7 @@ def cmd_record(a) -> None:
         snap = await cli.snapshot()
         node = snap.sources.get(a.address.upper())
         if not node:
-            sys.exit(f"no microphone node for {a.address}; run `picomms-probe nodes`")
+            sys.exit(f"no microphone node for {a.address}; run `crewline-probe nodes`")
         proc = await cli.start_tap(node.name)
         buf = bytearray()
         t0 = time.time()
@@ -146,7 +146,7 @@ def cmd_dtmf_scan(a) -> None:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(prog="picomms-probe", description=__doc__,
+    ap = argparse.ArgumentParser(prog="crewline-probe", description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("inventory"); p.add_argument("--json"); p.set_defaults(fn=cmd_inventory)
@@ -158,9 +158,9 @@ def main() -> None:
     p.set_defaults(fn=cmd_dtmf_scan)
     p = sub.add_parser("click-train"); p.add_argument("out"); p.add_argument("--count", type=int, default=20)
     p.add_argument("--interval", type=float, default=1.0)
-    p.set_defaults(fn=lambda a: __import__("picomms.tools.latency", fromlist=["x"]).click_train_wav(a.out, a.count, a.interval))
+    p.set_defaults(fn=lambda a: __import__("crewline.tools.latency", fromlist=["x"]).click_train_wav(a.out, a.count, a.interval))
     p = sub.add_parser("latency"); p.add_argument("file")
-    p.set_defaults(fn=lambda a: print(json.dumps(__import__("picomms.tools.latency", fromlist=["x"]).analyze_stereo(a.file), indent=2)))
+    p.set_defaults(fn=lambda a: print(json.dumps(__import__("crewline.tools.latency", fromlist=["x"]).analyze_stereo(a.file), indent=2)))
     a = ap.parse_args()
     a.fn(a)
 

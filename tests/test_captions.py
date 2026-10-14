@@ -2,9 +2,9 @@ import asyncio
 
 import pytest
 
-from picomms.captions.client import CaptionClient
-from picomms.captions.engines import EchoEngine
-from picomms.captions.server import CaptionServer
+from crewline.captions.client import CaptionClient
+from crewline.captions.engines import EchoEngine
+from crewline.captions.server import CaptionServer
 
 
 async def start_server(token=""):

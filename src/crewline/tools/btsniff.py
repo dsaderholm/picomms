@@ -1,4 +1,4 @@
-"""picomms-btsniff: forward HFP AT commands seen by btmon to the engine.
+"""crewline-btsniff: forward HFP AT commands seen by btmon to the engine.
 
 Runs as its own service so that a parsing problem can never touch the audio or
 the engine. Needs permission to open the HCI monitor channel (CAP_NET_RAW).
@@ -50,7 +50,7 @@ async def run(args) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--socket", default=os.environ.get("PICOMMS_SOCKET", "/run/picomms/engine.sock"))
+    ap.add_argument("--socket", default=os.environ.get("CREWLINE_SOCKET", "/run/crewline/engine.sock"))
     ap.add_argument("--log", help="append raw btmon text here (for validation records)")
     asyncio.run(run(ap.parse_args()))
 

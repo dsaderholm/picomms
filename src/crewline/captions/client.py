@@ -16,11 +16,11 @@ from typing import Callable
 
 from . import protocol as P
 
-log = logging.getLogger("picomms.captionclient")
+log = logging.getLogger("crewline.captionclient")
 
 
 class CaptionClient:
-    def __init__(self, on_text: Callable[[dict], None], site: str = "picomms", token: str = "",
+    def __init__(self, on_text: Callable[[dict], None], site: str = "crewline", token: str = "",
                  max_queue_bytes: int = 2_000_000) -> None:
         self.on_text = on_text
         self.site = site

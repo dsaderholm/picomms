@@ -10,10 +10,10 @@ import struct
 import pytest
 from aiohttp.test_utils import TestClient, TestServer
 
-from picomms.engine import Engine
-from picomms.engine_api import make_app
-from picomms.bluez import SimBluetooth
-from picomms.sim import SimDevice, SimGraph
+from crewline.engine import Engine
+from crewline.engine_api import make_app
+from crewline.bluez import SimBluetooth
+from crewline.sim import SimDevice, SimGraph
 
 SOUND, ALEX, BO = "AA:BB:CC:00:00:01", "AA:BB:CC:00:00:02", "AA:BB:CC:00:00:03"
 
@@ -61,13 +61,13 @@ async def test_links_follow_groups(rig):
     assert (SOUND, ALEX) in g.links and (ALEX, SOUND) in g.links
     # Bo is on stage, Sound talks to tech: Bo does not hear Sound
     assert (SOUND, BO) not in g.links
-    from picomms.control import ControlEvent
+    from crewline.control import ControlEvent
     await eng.control(ControlEvent("sound", "select:stage", "test"))
     assert await wait_for(lambda: (SOUND, BO) in g.links and (SOUND, ALEX) not in g.links)
 
 
 async def test_cue_goes_only_to_affected_endpoint(rig):
-    from picomms.control import ControlEvent
+    from crewline.control import ControlEvent
     eng, g = rig
     await eng.control(ControlEvent("sound", "select:stage", "dtmf"))
     assert await wait_for(lambda: len(g.cues) >= 1)
@@ -162,7 +162,7 @@ async def test_engine_survives_caption_server_down(rig):
     eng.store.set_captions({"server": "127.0.0.1:1"})
     tap = g.taps.get(ALEX) or None
     assert await wait_for(lambda: ALEX in g.taps)
-    from picomms.sim import speech_like
+    from crewline.sim import speech_like
     pcm = speech_like(1.0)
     for i in range(0, len(pcm), 640):
         g.taps[ALEX].push(pcm[i:i + 640])

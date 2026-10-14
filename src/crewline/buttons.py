@@ -15,7 +15,7 @@ Event sources (each independent, each optional):
 ``hfp-at``   AT commands the headset sends over its HFP/HSP RFCOMM channel
              (call button, redial, voice-assistant, volume gain). Per device,
              so identical headset models are distinguishable. Captured by
-             ``picomms-btsniff`` from ``btmon``. NOT YET VERIFIED on hardware.
+             ``crewline-btsniff`` from ``btmon``. NOT YET VERIFIED on hardware.
 ``avrcp``    Media keys via BlueZ's uinput device "<device name> (AVRCP)".
              BlueZ sets the device's PHYS field to the *adapter* address, so
              identical models on one adapter cannot be told apart by this source

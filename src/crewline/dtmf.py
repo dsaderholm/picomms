@@ -94,7 +94,7 @@ class DtmfDecoder:
         self._gate_release_at = -1   # frame index at which gate drops
         self._last_tone_frame = -1
         # Optional diagnostics: called with a dict for every non-silent frame.
-        # Used by `picomms-probe dtmf-scan` to tune thresholds on real audio.
+        # Used by `crewline-probe dtmf-scan` to tune thresholds on real audio.
         self.on_frame = None
 
     @property

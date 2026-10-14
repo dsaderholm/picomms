@@ -6,7 +6,7 @@ Streaming engines (sherpa-onnx transducer) produce interim text as audio
 arrives; offline engines (Whisper, Moonshine) decode when the segment ends
 (and optionally on a timer for interim text).
 
-Status: adapters are functionally exercised by ``picomms-asr-bench`` and
+Status: adapters are functionally exercised by ``crewline-asr-bench`` and
 ``tests/test_captions.py`` (echo engine only in CI). Accuracy/latency on the
 *target* hardware and *real* booth audio is NOT yet measured -- see
 docs/04-validation-plan.md test T11.

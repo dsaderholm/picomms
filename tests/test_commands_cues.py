@@ -1,10 +1,10 @@
 import io
 import wave
 
-from picomms.commands import DtmfCommandHandler
-from picomms.cues import duration_s, render_wav
-from picomms.dtmf import DtmfEvent
-from picomms.model import default_config
+from crewline.commands import DtmfCommandHandler
+from crewline.cues import duration_s, render_wav
+from crewline.dtmf import DtmfEvent
+from crewline.model import default_config
 
 
 def digit(d, t=0.0):

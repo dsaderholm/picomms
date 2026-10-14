@@ -23,7 +23,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable, Protocol
 
-log = logging.getLogger("picomms.bt")
+log = logging.getLogger("crewline.bt")
 
 HFP_HF_UUID = "0000111e-0000-1000-8000-00805f9b34fb"   # Handsfree (the headset)
 HSP_HS_UUID = "00001108-0000-1000-8000-00805f9b34fb"   # Headset
@@ -131,7 +131,7 @@ class BtManager(Protocol):
 class BluezDbus:
     """Real BlueZ manager. Requires ``dbus-fast`` and a running ``bluetoothd``."""
 
-    AGENT_PATH = "/org/picomms/agent"
+    AGENT_PATH = "/org/crewline/agent"
 
     def __init__(self, known_addresses: Callable[[], set[str]]) -> None:
         self._bus = None

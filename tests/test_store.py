@@ -2,8 +2,8 @@ import json
 
 import pytest
 
-from picomms.model import ConfigError, ConfigLocked
-from picomms.store import ConfigStore
+from crewline.model import ConfigError, ConfigLocked
+from crewline.store import ConfigStore
 
 
 def endpoint(**kw):

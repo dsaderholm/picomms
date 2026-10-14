@@ -36,7 +36,7 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from picomms.captions.engines import build_engine  # noqa: E402
+from crewline.captions.engines import build_engine  # noqa: E402
 
 
 def read_wav(path: str) -> np.ndarray:

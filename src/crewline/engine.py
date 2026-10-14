@@ -1,4 +1,4 @@
-"""The PicoMMS engine daemon.
+"""The Crewline engine daemon.
 
 The *real-time audio* is carried by PipeWire (BlueZ -> SCO -> PipeWire nodes ->
 links). This daemon is the control plane around it:
@@ -43,7 +43,7 @@ from .pwgraph import GraphBackend, GraphSnapshot, PipeWireCli
 from .routing import EndpointState, compute_links, explain, init_state
 from .store import ConfigStore
 
-log = logging.getLogger("picomms.engine")
+log = logging.getLogger("crewline.engine")
 
 TICK_S = 1.0               # slow reconcile cadence; control events trigger an immediate pass
 BT_REFRESH_S = 2.0
@@ -114,7 +114,7 @@ class Engine:
         self._last_published = ""
         self._last_bt = 0.0
         self.started = time.time()
-        self.captions = CaptionClient(self._on_caption, token=os.environ.get("PICOMMS_CAPTION_TOKEN", ""))
+        self.captions = CaptionClient(self._on_caption, token=os.environ.get("CREWLINE_CAPTION_TOKEN", ""))
         self.transcript_file: Path | None = None
         self._cue_dir = self.state_dir / "cues"
         self.log_events: deque[dict] = deque(maxlen=200)
@@ -526,7 +526,7 @@ class Engine:
             "pairing_open_s": max(0, int(self.bt.pairing_open_until - time.monotonic())),
             "attention": [a.to_dict() for a in self.controller.attention[-20:]],
             "attention_target": cfg.attention_target,
-            "captions": {**self.captions.health(), "highlight_terms": cfg.captions.highlight_terms,
+            "captions": {**self.captions.health(), "server_cfg": cfg.captions.server, "highlight_terms": cfg.captions.highlight_terms,
                          "retain_transcripts": cfg.captions.retain_transcripts},
             "dtmf": {"prefix": cfg.dtmf.prefix, "commands": cfg.dtmf.commands,
                      "min_tone_ms": cfg.dtmf.min_tone_ms, "gate_hold_ms": cfg.dtmf.gate_hold_ms,
@@ -687,9 +687,9 @@ async def run(args) -> None:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="PicoMMS engine")
-    ap.add_argument("--state-dir", default=os.environ.get("PICOMMS_STATE", "/var/lib/picomms"))
-    ap.add_argument("--socket", default=os.environ.get("PICOMMS_SOCKET", "/run/picomms/engine.sock"))
+    ap = argparse.ArgumentParser(description="Crewline engine")
+    ap.add_argument("--state-dir", default=os.environ.get("CREWLINE_STATE", "/var/lib/crewline"))
+    ap.add_argument("--socket", default=os.environ.get("CREWLINE_SOCKET", "/run/crewline/engine.sock"))
     ap.add_argument("--sim", action="store_true", help="run against a simulated Bluetooth/PipeWire (demo/dev only)")
     ap.add_argument("-v", "--verbose", action="store_true")
     args = ap.parse_args()
